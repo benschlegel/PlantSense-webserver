@@ -1,0 +1,9 @@
+node_modules/
+.vscode/
+images/
+startServer.ps1
+startServerDev.ps1
+.eslintrc.json
+.gitignore
+.git/
+README.md
