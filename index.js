@@ -93,7 +93,9 @@ fastify.post('/sendNotification', async (request, reply) => {
     const state = updateNotifications(deviceName);
 
     // Set state of microcontroller
-    setState(state);
+    if (deviceName === DEFAULT_DEVICE_NAME) {
+      setState(state);
+    }
 
     // Send the response
     reply.status(200);
