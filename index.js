@@ -4,26 +4,26 @@
 // Constants (cant use export with vanilla js/node)
 const water = {
   red: 0,
+  green: 0,
   blue: 255,
-  green: 0
 }
 
 const sun = {
   red: 255,
-  blue: 63,
-  green: 0
+  green: 63,
+  blue: 0,
 }
 
 const fertilizer = {
   red: 255,
+  green: 0,
   blue: 0,
-  green: 0
 }
 
 const defaultState = {
   red: 0,
+  green: 125,
   blue: 0,
-  green: 0
 }
 
 const DEFAULT_STATE_NUMBER = -1;
