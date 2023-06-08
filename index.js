@@ -79,7 +79,10 @@ fastify.post('/sendNotification', async (request, reply) => {
     console.log("Received request: ", deviceName);
 
     // Update notifications array
-    updateNotifications(deviceName);
+    const state = updateNotifications(deviceName);
+
+    // Set state of microcontroller
+    setState(state);
 
     // Send the response
     reply.status(200);
@@ -170,33 +173,7 @@ fastify.post('/setState', async (request, reply) => {
     }
 
     currentState = state;
-    const isLedSolid = state % 2 === 1;
-    const payload = {
-      isSolid: isLedSolid
-    };
-    console.log("Payload: ",JSON.stringify(payload));
-
-    // Set isSolid state on esp
-    fetch(espAddress + "/setState", {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain'
-      },
-      body: JSON.stringify(payload)
-    })
-      .catch(error => {
-        console.error('Error:', error);
-      });
-
-    // Set led state
-    // TODO: use enum for state/update server to support typescript
-    if (state === 0 || state === 1) {
-      setLed(water);
-    } else if (state === 2 || state === 3) {
-      setLed(sun)
-    } else if (state === 4 || state === 5) {
-      setLed(fertilizer);
-    }
+    setState(state);
     reply.status(200);
   } catch (error) {
     console.error(error);
@@ -249,6 +226,10 @@ fastify.delete('/clearNotification', async (request, reply) => {
   }
   // Remove notification at index from array
   notificationsOfDevice.notifications.splice(index, 1);
+
+  // After removing notification, set state to last notification entry
+  const state = notificationsOfDevice.notifications[notificationsOfDevice.length - 1];
+  setState(state);
   reply.status(200);
 });
 
@@ -307,6 +288,11 @@ fastify.listen({ port: 80, host:"0.0.0.0" }, function (err, address) {
 
 
 // Helpers
+/**
+ *
+ * @param {string} deviceName what device to update notification for
+ * @returns the generated notification
+ */
 function updateNotifications(deviceName) {
   // Returns notification object, if device name is already stored
   // e.g. {name: "Planty", notifications: [1]}
@@ -323,6 +309,8 @@ function updateNotifications(deviceName) {
     notificationsOfDevice.notifications.push(randomNotification);
     console.log("Notifications for device '" + deviceName + "': ", notificationsOfDevice.notifications);
   }
+
+  return randomNotification;
 }
 
 /**
@@ -340,6 +328,40 @@ function setLed(payload) {
     .catch(error => {
       console.error('Error:', error);
     });
+}
+
+/**
+ * Set microcontroller state (led color)
+ * @param {number} state state to set microcontroller to
+ */
+function setState(state) {
+  const isLedSolid = state % 2 === 1;
+    const payload = {
+      isSolid: isLedSolid
+    };
+    console.log("Payload: ",JSON.stringify(payload));
+
+    // Set isSolid state on esp
+    fetch(espAddress + "/setState", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain'
+      },
+      body: JSON.stringify(payload)
+    })
+      .catch(error => {
+        console.error('Error:', error);
+      });
+
+    // Set led state
+    // TODO: use enum for state/update server to support typescript
+    if (state === 0 || state === 1) {
+      setLed(water);
+    } else if (state === 2 || state === 3) {
+      setLed(sun)
+    } else if (state === 4 || state === 5) {
+      setLed(fertilizer);
+    }
 }
 
 // Adjust this for different notifications
