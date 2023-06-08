@@ -22,7 +22,7 @@ const fertilizer = {
 
 const defaultState = {
   red: 0,
-  green: 125,
+  green: 63,
   blue: 0,
 }
 
