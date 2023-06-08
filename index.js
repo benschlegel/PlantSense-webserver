@@ -26,6 +26,8 @@ const defaultState = {
   green: 0
 }
 
+const DEFAULT_STATE_NUMBER = -1;
+
 const fetch = require("node-fetch");
 
 // Update this for demo
@@ -115,7 +117,7 @@ fastify.post('/registerDevice', async (request, reply) => {
       notifications.push({name: deviceName, notifications: []});
     }
 
-    setState(defaultState);
+    setState(DEFAULT_STATE_NUMBER);
     // Send the response
     reply.status(200);
   } catch (error) {
@@ -242,7 +244,7 @@ fastify.delete('/clearNotification', async (request, reply) => {
     const state = notificationsOfDevice.notifications[notificationsOfDevice.notifications.length - 1];
     setState(state);
   } else {
-    setState(defaultState);
+    setState(DEFAULT_STATE_NUMBER);
   }
   reply.status(200);
 });
@@ -349,7 +351,7 @@ function setLed(payload) {
  * @param {number} state state to set microcontroller to
  */
 function setState(state) {
-  const isLedSolid = state % 2 === 1;
+  const isLedSolid = state % 2 === 1 || state === -1;
     const payload = {
       isSolid: isLedSolid
     };
@@ -375,6 +377,8 @@ function setState(state) {
       setLed(sun)
     } else if (state === 4 || state === 5) {
       setLed(fertilizer);
+    } else if (state === -1) {
+      setLed(defaultState);
     }
 }
 
