@@ -10,8 +10,8 @@ const water = {
 
 const sun = {
   red: 255,
-  blue: 0,
-  green: 255
+  blue: 63,
+  green: 0
 }
 
 const fertilizer = {
@@ -19,6 +19,13 @@ const fertilizer = {
   blue: 0,
   green: 0
 }
+
+const defaultState = {
+  red: 0,
+  blue: 0,
+  green: 0
+}
+
 const fetch = require("node-fetch");
 
 // Update this for demo
@@ -108,6 +115,7 @@ fastify.post('/registerDevice', async (request, reply) => {
       notifications.push({name: deviceName, notifications: []});
     }
 
+    setState(defaultState);
     // Send the response
     reply.status(200);
   } catch (error) {
@@ -228,8 +236,14 @@ fastify.delete('/clearNotification', async (request, reply) => {
   notificationsOfDevice.notifications.splice(index, 1);
 
   // After removing notification, set state to last notification entry
-  const state = notificationsOfDevice.notifications[notificationsOfDevice.length - 1];
-  setState(state);
+  const notificationLength = notificationsOfDevice.notifications.length;
+  // If there are remaining notifications, pick most recent one after deleting
+  if(notificationLength > 0) {
+    const state = notificationsOfDevice.notifications[notificationsOfDevice.notifications.length - 1];
+    setState(state);
+  } else {
+    setState(defaultState);
+  }
   reply.status(200);
 });
 
