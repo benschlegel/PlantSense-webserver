@@ -28,6 +28,8 @@ const defaultState = {
 
 const DEFAULT_STATE_NUMBER = -1;
 
+const DEFAULT_DEVICE_NAME = "PlantSense - Planty";
+
 const fetch = require("node-fetch");
 
 // Update this for demo
@@ -240,11 +242,14 @@ fastify.delete('/clearNotification', async (request, reply) => {
   // After removing notification, set state to last notification entry
   const notificationLength = notificationsOfDevice.notifications.length;
   // If there are remaining notifications, pick most recent one after deleting
-  if(notificationLength > 0) {
-    const state = notificationsOfDevice.notifications[notificationsOfDevice.notifications.length - 1];
-    setState(state);
-  } else {
-    setState(DEFAULT_STATE_NUMBER);
+
+  if (deviceName === DEFAULT_DEVICE_NAME) {
+    if(notificationLength > 0) {
+      const state = notificationsOfDevice.notifications[notificationsOfDevice.notifications.length - 1];
+      setState(state);
+    } else {
+      setState(DEFAULT_STATE_NUMBER);
+    }
   }
   reply.status(200);
 });
