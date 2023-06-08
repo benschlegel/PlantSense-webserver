@@ -22,15 +22,18 @@ const fertilizer = {
 const fetch = require("node-fetch");
 
 // Update this for demo
-const esp_url = "http://192.168.141.35";
-const HTTP_TIMEOUT = 1500;
+// const esp_url = "http://192.168.141.35";
+const HTTP_TIMEOUT = 4000;
+const ADDRESS_PREFIX = "http://";
 
 // Storage for notifications
 const notifications = [{name: "Planty", notifications: [0,1]}];
-// TODO: implement ([{name: string, adress: string}])
-const addresses = [];
 
 let currentState;
+
+// TODO: change this to be arr of [{name: string(esp name), address: string}]
+// Change default value here
+let espAddress = "http://192.168.141.35";
 
 const fastify = require('fastify')({
   logger: true
@@ -47,7 +50,7 @@ fastify.get('/heartbeat', async (request, reply) => {
   const timeoutId = setTimeout(() => controller.abort(), HTTP_TIMEOUT);
 
   try {
-    const response = await fetch(esp_url + "/heartbeat", {
+    const response = await fetch(espAddress + "/heartbeat", {
       signal: controller.signal
     }).then(() => {
       // If request was successful, pass success status code
@@ -90,6 +93,8 @@ fastify.post('/sendNotification', async (request, reply) => {
 // Needs refactoring on esp32 microcontroller side, for now almost duplicate endpoint (see "/sendNotification")
 fastify.post('/registerDevice', async (request, reply) => {
   try {
+    espAddress = ADDRESS_PREFIX + request.ip;
+    console.log("Registered with address: ", espAddress);
     // Process the request and perform any necessary operations
     const data = request.body; // Access the request body
     const deviceName = data["name"];
@@ -172,7 +177,7 @@ fastify.post('/setState', async (request, reply) => {
     console.log("Payload: ",JSON.stringify(payload));
 
     // Set isSolid state on esp
-    fetch(esp_url + "/setState", {
+    fetch(espAddress + "/setState", {
       method: 'POST',
       headers: {
         'Content-Type': 'text/plain'
@@ -202,7 +207,7 @@ fastify.post('/setState', async (request, reply) => {
 fastify.post('/toggleState', (req, reply) => {
   try {
     // Set isSolid state on esp
-    fetch(esp_url + "/toggleState", {
+    fetch(espAddress + "/toggleState", {
       method: 'POST',
     })
       .catch(error => {
@@ -245,6 +250,10 @@ fastify.delete('/clearNotification', async (request, reply) => {
   // Remove notification at index from array
   notificationsOfDevice.notifications.splice(index, 1);
   reply.status(200);
+});
+
+fastify.get('/deviceAddress', async (request, reply) => {
+  reply.status(200).send({address: espAddress});
 });
 
 // Set leds on esp32 microcontroller
@@ -321,7 +330,7 @@ function updateNotifications(deviceName) {
  * @param {*} payload must be of structure {red: 0-255, green: 0-255, blue: 0-255}
  */
 function setLed(payload) {
-  fetch(esp_url + "/led", {
+  fetch(espAddress + "/led", {
     method: 'POST',
     headers: {
       'Content-Type': 'text/plain'
