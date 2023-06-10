@@ -5,6 +5,9 @@ import { ClearNotificationQuery, NotificationParams, SendNotificationBody, SetSt
 import { generateRandomNotification } from './helpers/functions';
 import { setState, setLed } from './helpers/networkFunctions';
 import { HTTP_TIMEOUT, DEFAULT_DEVICE_NAME, ADDRESS_PREFIX, DEFAULT_STATE } from './config/config';
+import { generalEndpoints } from './endpoints/general/general';
+import { microcontrollerEndpoints } from './endpoints/microcontroller/microcontroller';
+import { appEndpoints } from './endpoints/app/app';
 
 // Initial notification (mock only)
 const defaultNotification: Notification = { name: 'Planty', notifications: [0, 1] };
@@ -16,7 +19,17 @@ const notifications: Notification[] = [defaultNotification];
 // Change default value here, gets overriden by [POST: /registerDevice]
 let espAddress = 'http://192.168.141.35';
 
-const server: Fastify.FastifyInstance = Fastify.fastify({ logger: true });
+// Export server so routes can be defined in different files/folders
+export const server: Fastify.FastifyInstance = Fastify.fastify({ logger: true });
+
+// Register all endpoints in different files/folders
+// To add a new file/folder, follow the structure of "endpoints/general/general.ts" and export a function
+// containing all endpoints
+// all routes from register will be prefixed with prefix
+server.register(generalEndpoints);
+server.register(microcontrollerEndpoints, { prefix: '/mc' });
+server.register(appEndpoints, { prefix: '/app' });
+
 // Declare a route
 server.get('/', function(request, reply) {
 	console.log('Got request, ' + request.ip);
