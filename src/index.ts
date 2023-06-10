@@ -1,6 +1,8 @@
 import fetch from 'node-fetch';
-import Fastify from 'fastify';
+import * as Fastify from 'fastify';
 import { water, sun, fertilizer, defaultState } from './config/config';
+import { Notification } from './types/types';
+import { SendNotificationBody } from './types/requests';
 
 
 const DEFAULT_STATE_NUMBER = -1;
@@ -10,26 +12,25 @@ const DEFAULT_DEVICE_NAME = 'PlantSense - Planty';
 const HTTP_TIMEOUT = 4000;
 const ADDRESS_PREFIX = 'http://';
 
-// Storage for notifications
-const notifications = [{ name: 'Planty', notifications: [0, 1] }];
+// Initial notification (mock only)
+const defaultNotification: Notification = { name: 'Planty', notifications: [0, 1] };
 
-let currentState;
+// Storage notifications for all devices
+const notifications: Notification[] = [defaultNotification];
 
 // TODO: change this to be arr of [{name: string(esp name), address: string}]
-// Change default value here
+// Change default value here, gets overriden by [POST: /registerDevice]
 let espAddress = 'http://192.168.141.35';
 
-const fastify = Fastify({
-	logger: true,
-});
+const server: Fastify.FastifyInstance = Fastify.fastify({ logger: true });
 
 // Declare a route
-fastify.get('/', function(request, reply) {
+server.get('/', function(request, reply) {
 	console.log('Got request, ' + request.ip);
 	reply.send('Response (Hello World)');
 });
 
-fastify.get('/heartbeat', async (request, reply) => {
+server.get('/heartbeat', async (request, reply) => {
 	const controller = new AbortController();
 	const timeoutId = setTimeout(() => controller.abort(), HTTP_TIMEOUT);
 
@@ -56,7 +57,7 @@ fastify.get('/heartbeat', async (request, reply) => {
 // Endpoint to receive notification from esp32 microcontroller (contains device name)
 // needs payload with scheme:
 // {name: "device name here"}
-fastify.post('/sendNotification', async (request, reply) => {
+server.post<{Body: SendNotificationBody}>('/sendNotification', async (request, reply) => {
 	try {
 		// Process the request and perform any necessary operations
 		const data = request.body; // Access the request body
@@ -83,7 +84,7 @@ fastify.post('/sendNotification', async (request, reply) => {
 
 // Endpoint that esp calls on startup to register itself (if not already registered on server)
 // Needs refactoring on esp32 microcontroller side, for now almost duplicate endpoint (see "/sendNotification")
-fastify.post('/registerDevice', async (request, reply) => {
+server.post('/registerDevice', async (request, reply) => {
 	try {
 		espAddress = ADDRESS_PREFIX + request.ip;
 		console.log('Registered with address: ', espAddress);
@@ -109,7 +110,7 @@ fastify.post('/registerDevice', async (request, reply) => {
 
 // Returns the name of all registered devices on the server
 // e.g: (["Planty", "Device2"])
-fastify.get('/devices', async (request, reply) => {
+server.get('/devices', async (request, reply) => {
 	const devices = [];
 	for (const element of notifications) {
 		devices.push(element.name);
@@ -118,7 +119,7 @@ fastify.get('/devices', async (request, reply) => {
 	reply.send(devices);
 });
 
-fastify.get('/notifications', async (request, reply) => {
+server.get('/notifications', async (request, reply) => {
 	// gets the '?name=' parameter
 	const deviceName = request.query.name;
 
@@ -137,7 +138,7 @@ fastify.get('/notifications', async (request, reply) => {
  * Returns all notifications for all devices stored on the server.
  * Scheme: [{name: string, notifications: number}]
  */
-fastify.get('/allNotifications', async (req, reply) => {
+server.get('/allNotifications', async (req, reply) => {
 	if (!notifications) {
 		reply.status(500);
 		return;
@@ -145,7 +146,7 @@ fastify.get('/allNotifications', async (req, reply) => {
 	reply.status(200).send(notifications);
 });
 
-fastify.post('/setState', async (request, reply) => {
+server.post('/setState', async (request, reply) => {
 	try {
 		// gets the '?state=' parameter
 		const stateBody = request.body['state'];
@@ -175,7 +176,7 @@ fastify.post('/setState', async (request, reply) => {
 	}
 });
 
-fastify.post('/toggleState', (req, reply) => {
+server.post('/toggleState', (req, reply) => {
 	try {
 		// Set isSolid state on esp
 		fetch(espAddress + '/toggleState', {
@@ -197,7 +198,7 @@ fastify.post('/toggleState', (req, reply) => {
  * Endpoint to delete a single notification of a single device
  * Takes two url parameters: ?name: name of the device, ?index: index of the notification to be deleted
  */
-fastify.delete('/clearNotification', async (request, reply) => {
+server.delete('/clearNotification', async (request, reply) => {
 	if (!notifications) {
 		reply.status(500);
 		return;
@@ -238,12 +239,12 @@ fastify.delete('/clearNotification', async (request, reply) => {
 	reply.status(200);
 });
 
-fastify.get('/deviceAddress', async (request, reply) => {
+server.get('/deviceAddress', async (request, reply) => {
 	reply.status(200).send({ address: espAddress });
 });
 
 // Set leds on esp32 microcontroller
-fastify.post('/led', async (request, reply) => {
+server.post('/led', async (request, reply) => {
 	try {
 		// Process the request and perform any necessary operations
 		const data = request.body; // Access the request body
@@ -284,9 +285,9 @@ fastify.post('/led', async (request, reply) => {
 });
 
 // Run the server!
-fastify.listen({ port: 80, host:'0.0.0.0' }, function(err, address) {
+server.listen({ port: 80, host:'0.0.0.0' }, function(err, address) {
 	if (err) {
-		fastify.log.error(err);
+		server.log.error(err);
 		process.exit(1);
 	}
 	// Server is now listening on ${address}
