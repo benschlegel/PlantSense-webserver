@@ -1,8 +1,9 @@
 import fetch from 'node-fetch';
 import * as Fastify from 'fastify';
 import { water, sun, fertilizer, defaultState } from './config/config';
-import { Notification } from './types/types';
-import { SendNotificationBody } from './types/requests';
+import { Notification, RgbPayload } from './types/types';
+import { ClearNotificationQuery, NotificationParams, SendNotificationBody, SetStateBody } from './types/requests';
+import { NotificationState } from './types/enums';
 
 
 const DEFAULT_STATE_NUMBER = -1;
@@ -84,7 +85,7 @@ server.post<{Body: SendNotificationBody}>('/sendNotification', async (request, r
 
 // Endpoint that esp calls on startup to register itself (if not already registered on server)
 // Needs refactoring on esp32 microcontroller side, for now almost duplicate endpoint (see "/sendNotification")
-server.post('/registerDevice', async (request, reply) => {
+server.post<{Body: SendNotificationBody}>('/registerDevice', async (request, reply) => {
 	try {
 		espAddress = ADDRESS_PREFIX + request.ip;
 		console.log('Registered with address: ', espAddress);
@@ -119,7 +120,7 @@ server.get('/devices', async (request, reply) => {
 	reply.send(devices);
 });
 
-server.get('/notifications', async (request, reply) => {
+server.get<{Querystring: NotificationParams}>('/notifications', async (request, reply) => {
 	// gets the '?name=' parameter
 	const deviceName = request.query.name;
 
@@ -146,28 +147,14 @@ server.get('/allNotifications', async (req, reply) => {
 	reply.status(200).send(notifications);
 });
 
-server.post('/setState', async (request, reply) => {
+server.post<{Body: SetStateBody}>('/setState', async (request, reply) => {
 	try {
 		// gets the '?state=' parameter
 		const stateBody = request.body['state'];
 
-		// Cast state
-		let state;
-		try {
-			state = parseInt(stateBody);
-		}
-		catch {
-			console.error('/setState called with invalid parameter');
-		}
+		// TODO: validation
 
-		// If state is not a number, return
-		if (state === null || state === undefined) {
-			reply.status(500);
-			return;
-		}
-
-		currentState = state;
-		setState(state);
+		setState(stateBody);
 		reply.status(200);
 	}
 	catch (error) {
@@ -198,7 +185,7 @@ server.post('/toggleState', (req, reply) => {
  * Endpoint to delete a single notification of a single device
  * Takes two url parameters: ?name: name of the device, ?index: index of the notification to be deleted
  */
-server.delete('/clearNotification', async (request, reply) => {
+server.delete<{Querystring: ClearNotificationQuery}>('/clearNotification', async (request, reply) => {
 	if (!notifications) {
 		reply.status(500);
 		return;
@@ -244,14 +231,14 @@ server.get('/deviceAddress', async (request, reply) => {
 });
 
 // Set leds on esp32 microcontroller
-server.post('/led', async (request, reply) => {
+server.post<{Body: RgbPayload}>('/led', async (request, reply) => {
 	try {
 		// Process the request and perform any necessary operations
 		const data = request.body; // Access the request body
 
-		const red = data['red'];
-		const green = data['green'];
-		const blue = data['blue'];
+		// const red = data['red'];
+		// const green = data['green'];
+		// const blue = data['blue'];
 
 		// Return if payload is not valid
 		// TODO: check if incoming payload is valid before passing on
@@ -300,7 +287,7 @@ server.listen({ port: 80, host:'0.0.0.0' }, function(err, address) {
  * @param {string} deviceName what device to update notification for
  * @returns the generated notification
  */
-function updateNotifications(deviceName) {
+function updateNotifications(deviceName: string) {
 	// Returns notification object, if device name is already stored
 	// e.g. {name: "Planty", notifications: [1]}
 	const notificationsOfDevice = notifications.find(o => o.name === deviceName);
@@ -323,9 +310,9 @@ function updateNotifications(deviceName) {
 
 /**
  * Sends a request to set LED on esp32 microcontroller
- * @param {*} payload must be of structure {red: 0-255, green: 0-255, blue: 0-255}
+ * @param {RgbPayload} payload must be of structure {red: 0-255, green: 0-255, blue: 0-255}
  */
-function setLed(payload) {
+function setLed(payload: RgbPayload) {
 	fetch(espAddress + '/led', {
 		method: 'POST',
 		headers: {
@@ -340,9 +327,9 @@ function setLed(payload) {
 
 /**
  * Set microcontroller state (led color)
- * @param {number} state state to set microcontroller to
+ * @param {NotificationState} state state to set microcontroller to
  */
-function setState(state) {
+function setState(state: NotificationState) {
 	const isLedSolid = state % 2 === 1 || state === -1;
 	const payload = {
 		isSolid: isLedSolid,
@@ -363,16 +350,16 @@ function setState(state) {
 
 	// Set led state
 	// TODO: use enum for state/update server to support typescript
-	if (state === 0 || state === 1) {
+	if (state === NotificationState.LOW_WATER || state === NotificationState.HIGH_WATER) {
 		setLed(water);
 	}
-	else if (state === 2 || state === 3) {
+	if (state === NotificationState.LOW_SUN || state === NotificationState.HIGH_SUN) {
 		setLed(sun);
 	}
-	else if (state === 4 || state === 5) {
+	if (state === NotificationState.LOW_SOIL || state === NotificationState.HIGH_SOIL) {
 		setLed(fertilizer);
 	}
-	else if (state === -1) {
+	else if (state === NotificationState.NONE) {
 		setLed(defaultState);
 	}
 }
@@ -380,6 +367,7 @@ function setState(state) {
 // Adjust this for different notifications
 // Returns random number between 0 and 5
 function generateRandomNotification() {
+	// TODO: set max to enum.size or smth
 	return getRandomInt(0, 5);
 }
 
@@ -390,7 +378,7 @@ function generateRandomNotification() {
  * lower than max if max isn't an integer).
  * Using Math.round() will give you a non-uniform distribution!
  */
-function getRandomInt(min, max) {
+function getRandomInt(min: number, max: number) {
 	min = Math.ceil(min);
 	max = Math.floor(max);
 	return Math.floor(Math.random() * (max - min + 1)) + min;
