@@ -1,9 +1,9 @@
 import fetch from 'node-fetch';
 import * as Fastify from 'fastify';
-import { water, sun, fertilizer, defaultState } from './config/config';
 import { Notification, RgbPayload } from './types/types';
 import { ClearNotificationQuery, NotificationParams, SendNotificationBody, SetStateBody } from './types/requests';
-import { NotificationState } from './types/enums';
+import { generateRandomNotification } from './helpers/functions';
+import { setState, setLed } from './helpers/networkFunctions';
 
 
 const DEFAULT_STATE_NUMBER = -1;
@@ -71,7 +71,7 @@ server.post<{Body: SendNotificationBody}>('/sendNotification', async (request, r
 
 		// Set state of microcontroller
 		if (deviceName === DEFAULT_DEVICE_NAME) {
-			setState(state);
+			setState(state, espAddress);
 		}
 
 		// Send the response
@@ -99,7 +99,7 @@ server.post<{Body: SendNotificationBody}>('/registerDevice', async (request, rep
 			notifications.push({ name: deviceName, notifications: [] });
 		}
 
-		setState(DEFAULT_STATE_NUMBER);
+		setState(DEFAULT_STATE_NUMBER, espAddress);
 		// Send the response
 		reply.status(200);
 	}
@@ -154,7 +154,7 @@ server.post<{Body: SetStateBody}>('/setState', async (request, reply) => {
 
 		// TODO: validation
 
-		setState(stateBody);
+		setState(stateBody, espAddress);
 		reply.status(200);
 	}
 	catch (error) {
@@ -217,10 +217,10 @@ server.delete<{Querystring: ClearNotificationQuery}>('/clearNotification', async
 	if (deviceName === DEFAULT_DEVICE_NAME) {
 		if (notificationLength > 0) {
 			const state = notificationsOfDevice.notifications[notificationsOfDevice.notifications.length - 1];
-			setState(state);
+			setState(state, espAddress);
 		}
 		else {
-			setState(DEFAULT_STATE_NUMBER);
+			setState(DEFAULT_STATE_NUMBER, espAddress);
 		}
 	}
 	reply.status(200);
@@ -259,8 +259,9 @@ server.post<{Body: RgbPayload}>('/led', async (request, reply) => {
 		// }
 
 		// TODO: just pass data, no need to reformat (maybe)
+		// TODO: split routes into folders/files
 		// Send post request to esp (with incoming payload)
-		setLed(data);
+		setLed(data, espAddress);
 
 		// Send the response
 		reply.send({ success: true, message: 'Data received successfully' });
@@ -282,6 +283,7 @@ server.listen({ port: 80, host:'0.0.0.0' }, function(err, address) {
 
 
 // Helpers
+// Hard to move since it modifies global notification state
 /**
  *
  * @param {string} deviceName what device to update notification for
@@ -308,78 +310,3 @@ function updateNotifications(deviceName: string) {
 	return randomNotification;
 }
 
-/**
- * Sends a request to set LED on esp32 microcontroller
- * @param {RgbPayload} payload must be of structure {red: 0-255, green: 0-255, blue: 0-255}
- */
-function setLed(payload: RgbPayload) {
-	fetch(espAddress + '/led', {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'text/plain',
-		},
-		body: JSON.stringify(payload),
-	})
-		.catch(error => {
-			console.error('Error:', error);
-		});
-}
-
-/**
- * Set microcontroller state (led color)
- * @param {NotificationState} state state to set microcontroller to
- */
-function setState(state: NotificationState) {
-	const isLedSolid = state % 2 === 1 || state === -1;
-	const payload = {
-		isSolid: isLedSolid,
-	};
-	console.log('Payload: ', JSON.stringify(payload));
-
-	// Set isSolid state on esp
-	fetch(espAddress + '/setState', {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'text/plain',
-		},
-		body: JSON.stringify(payload),
-	})
-		.catch(error => {
-			console.error('Error:', error);
-		});
-
-	// Set led state
-	// TODO: use enum for state/update server to support typescript
-	if (state === NotificationState.LOW_WATER || state === NotificationState.HIGH_WATER) {
-		setLed(water);
-	}
-	if (state === NotificationState.LOW_SUN || state === NotificationState.HIGH_SUN) {
-		setLed(sun);
-	}
-	if (state === NotificationState.LOW_SOIL || state === NotificationState.HIGH_SOIL) {
-		setLed(fertilizer);
-	}
-	else if (state === NotificationState.NONE) {
-		setLed(defaultState);
-	}
-}
-
-// Adjust this for different notifications
-// Returns random number between 0 and 5
-function generateRandomNotification() {
-	// TODO: set max to enum.size or smth
-	return getRandomInt(0, 5);
-}
-
-/**
- * Returns a random integer between min (inclusive) and max (inclusive).
- * The value is no lower than min (or the next integer greater than min
- * if min isn't an integer) and no greater than max (or the next integer
- * lower than max if max isn't an integer).
- * Using Math.round() will give you a non-uniform distribution!
- */
-function getRandomInt(min: number, max: number) {
-	min = Math.ceil(min);
-	max = Math.floor(max);
-	return Math.floor(Math.random() * (max - min + 1)) + min;
-}
