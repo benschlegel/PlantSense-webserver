@@ -11,10 +11,11 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
 	// 	reply.send('Hello from microcontroller endpoint');
 	// });
 
-
-	// Endpoint to receive notification from esp32 microcontroller (contains device name)
-	// needs payload with scheme:
-	// {name: "device name here"}
+	/**
+   * Endpoint to receive notification from esp32 microcontroller (contains device name)
+   * needs payload with scheme:
+   * {name: "device name here"}
+   */
 	server.post<{Body: SendNotificationBody}>('/sendNotification', async (request, reply) => {
 		try {
 		// Process the request and perform any necessary operations
@@ -69,9 +70,10 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
 		}
 	});
 
-
-	// Endpoint that esp calls on startup to register itself (if not already registered on server)
-	// Needs refactoring on esp32 microcontroller side, for now almost duplicate endpoint (see "/sendNotification")
+	/**
+   * Endpoint that esp32 calls on startup to register itself (if not already registered on server)
+   * Needs refactoring on esp32 microcontroller side, for now almost duplicate endpoint (see "/sendNotification")
+   */
 	server.post<{Body: SendNotificationBody}>('/registerDevice', async (request, reply) => {
 		try {
 			const newAddr = ADDRESS_PREFIX + request.ip;

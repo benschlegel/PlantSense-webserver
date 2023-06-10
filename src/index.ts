@@ -1,10 +1,9 @@
 import fetch from 'node-fetch';
 import * as Fastify from 'fastify';
 import { Notification, RgbPayload } from './types/types';
-import { ClearNotificationQuery, NotificationParams, SendNotificationBody, SetStateBody } from './types/requests';
-import { generateRandomNotification } from './helpers/functions';
+import { ClearNotificationQuery, NotificationParams, SetStateBody } from './types/requests';
 import { setState, setLed } from './helpers/networkFunctions';
-import { HTTP_TIMEOUT, DEFAULT_DEVICE_NAME, ADDRESS_PREFIX, DEFAULT_STATE } from './config/config';
+import { DEFAULT_DEVICE_NAME, DEFAULT_STATE } from './config/config';
 import { generalEndpoints } from './endpoints/server/server';
 import { microcontrollerEndpoints } from './endpoints/microcontroller/microcontroller';
 import { appEndpoints } from './endpoints/app/app';
@@ -18,18 +17,6 @@ const notifications: Notification[] = [defaultNotification];
 // TODO: change this to be arr of [{name: string(esp name), address: string}]
 // Change default value here, gets overriden by [POST: /registerDevice]
 let espAddress = 'http://192.168.141.35';
-
-export function setEspAddress(newAddress: string) {
-	espAddress = newAddress;
-}
-
-export function getEspAddress() {
-	return espAddress;
-}
-
-export function getNotifications() {
-	return notifications;
-}
 
 // Export server so routes can be defined in different files/folders
 export const server: Fastify.FastifyInstance = Fastify.fastify({ logger: true });
@@ -50,8 +37,10 @@ server.get('/', function(request, reply) {
 	reply.send('Response (Hello World)');
 });
 
-// Returns the name of all registered devices on the server
-// e.g: (["Planty", "Device2"])
+/**
+ * Returns the name of all registered devices on the server
+ * e.g: (["Planty", "Device2"])
+ */
 server.get('/devices', async (request, reply) => {
 	const devices = [];
 	for (const element of notifications) {
@@ -61,6 +50,11 @@ server.get('/devices', async (request, reply) => {
 	reply.send(devices);
 });
 
+/**
+ * Gets all notifications for a specific device.
+ * Takes 'name' as a query parameter (?name=) to specify device.
+ * @returns all notifications of a single device.
+ */
 server.get<{Querystring: NotificationParams}>('/notifications', async (request, reply) => {
 	// gets the '?name=' parameter
 	const deviceName = request.query.name;
@@ -88,6 +82,11 @@ server.get('/allNotifications', async (req, reply) => {
 	reply.status(200).send(notifications);
 });
 
+/**
+ * Sets the state of the microcontroller (via 'NotificationState' type).
+ * Takes 'state' (?state=) as a query parameter to set new state
+ * @returns 200, if successful or 500 if not.
+ */
 server.post<{Body: SetStateBody}>('/setState', async (request, reply) => {
 	try {
 		// gets the '?state=' parameter
@@ -104,6 +103,10 @@ server.post<{Body: SetStateBody}>('/setState', async (request, reply) => {
 	}
 });
 
+/**
+ * Toggles the state of the microcontroller (solid light <-> blinking).
+ * @returns 200, if successful or 500 if not
+ */
 server.post('/toggleState', (req, reply) => {
 	try {
 		// Set isSolid state on esp
@@ -167,11 +170,17 @@ server.delete<{Querystring: ClearNotificationQuery}>('/clearNotification', async
 	reply.status(200);
 });
 
+/**
+ * Gets the current IP address of the microcontroller
+ */
 server.get('/deviceAddress', async (request, reply) => {
 	reply.status(200).send({ address: espAddress });
 });
 
-// Set leds on esp32 microcontroller
+/**
+ * Set the color of the LED-strip connected to the microcontroller.
+ * @param rgb takes an object of type 'RgbPayload' in http body. ({red: 0-255, green: 0-255, blue: 0-255})
+ */
 server.post<{Body: RgbPayload}>('/led', async (request, reply) => {
 	try {
 		// Process the request and perform any necessary operations
@@ -200,6 +209,15 @@ server.listen({ port: 80, host:'0.0.0.0' }, function(err, address) {
 	console.log('Routes: ', server.printRoutes());
 });
 
-// Helpers
-// Hard to move since it modifies global notification state
+// Setters and getters
+export function setEspAddress(newAddress: string) {
+	espAddress = newAddress;
+}
 
+export function getEspAddress() {
+	return espAddress;
+}
+
+export function getNotifications() {
+	return notifications;
+}
