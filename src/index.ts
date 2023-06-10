@@ -5,7 +5,7 @@ import { ClearNotificationQuery, NotificationParams, SendNotificationBody, SetSt
 import { generateRandomNotification } from './helpers/functions';
 import { setState, setLed } from './helpers/networkFunctions';
 import { HTTP_TIMEOUT, DEFAULT_DEVICE_NAME, ADDRESS_PREFIX, DEFAULT_STATE } from './config/config';
-import { generalEndpoints } from './endpoints/general/general';
+import { generalEndpoints } from './endpoints/server/server';
 import { microcontrollerEndpoints } from './endpoints/microcontroller/microcontroller';
 import { appEndpoints } from './endpoints/app/app';
 
@@ -19,6 +19,18 @@ const notifications: Notification[] = [defaultNotification];
 // Change default value here, gets overriden by [POST: /registerDevice]
 let espAddress = 'http://192.168.141.35';
 
+export function setEspAddress(newAddress: string) {
+	espAddress = newAddress;
+}
+
+export function getEspAddress() {
+	return espAddress;
+}
+
+export function getNotifications() {
+	return notifications;
+}
+
 // Export server so routes can be defined in different files/folders
 export const server: Fastify.FastifyInstance = Fastify.fastify({ logger: true });
 
@@ -27,91 +39,15 @@ export const server: Fastify.FastifyInstance = Fastify.fastify({ logger: true })
 // containing all endpoints
 // all routes from register will be prefixed with prefix
 server.register(generalEndpoints);
-server.register(microcontrollerEndpoints, { prefix: '/mc' });
-server.register(appEndpoints, { prefix: '/app' });
+// server.register(microcontrollerEndpoints, { prefix: '/mc' });
+// server.register(appEndpoints, { prefix: '/app' });
+server.register(microcontrollerEndpoints);
+server.register(appEndpoints);
 
 // Declare a route
 server.get('/', function(request, reply) {
 	console.log('Got request, ' + request.ip);
 	reply.send('Response (Hello World)');
-});
-
-server.get('/heartbeat', async (request, reply) => {
-	const controller = new AbortController();
-	const timeoutId = setTimeout(() => controller.abort(), HTTP_TIMEOUT);
-
-	try {
-		const response = await fetch(espAddress + '/heartbeat', {
-			signal: controller.signal,
-		}).then(() => {
-			// If request was successful, pass success status code
-			console.log('Esp heartbeat ack');
-			reply.status(200);
-		});
-		console.log(response);
-	}
-	catch (error) {
-		// 503 service unavailable
-		console.log('Error:', error);
-		reply.status(503);
-	}
-	finally {
-		clearTimeout(timeoutId);
-	}
-});
-
-// Endpoint to receive notification from esp32 microcontroller (contains device name)
-// needs payload with scheme:
-// {name: "device name here"}
-server.post<{Body: SendNotificationBody}>('/sendNotification', async (request, reply) => {
-	try {
-		// Process the request and perform any necessary operations
-		const data = request.body; // Access the request body
-
-		const deviceName = data['name'];
-		console.log('Received request: ', deviceName);
-
-		// Update notifications array
-		const state = updateNotifications(deviceName);
-
-		// Set state of microcontroller
-		if (deviceName === DEFAULT_DEVICE_NAME) {
-			setState(state, espAddress);
-		}
-
-		// Send the response
-		reply.status(200);
-	}
-	catch (error) {
-		console.error(error);
-		reply.status(500).send({ success: false, message: 'An error occurred' });
-	}
-});
-
-// Endpoint that esp calls on startup to register itself (if not already registered on server)
-// Needs refactoring on esp32 microcontroller side, for now almost duplicate endpoint (see "/sendNotification")
-server.post<{Body: SendNotificationBody}>('/registerDevice', async (request, reply) => {
-	try {
-		espAddress = ADDRESS_PREFIX + request.ip;
-		console.log('Registered with address: ', espAddress);
-		// Process the request and perform any necessary operations
-		const data = request.body; // Access the request body
-		const deviceName = data['name'];
-
-		// Register device in notifications array (if it does not already exist)
-		const notificationsOfDevice = notifications.find(o => o.name === deviceName);
-		if (!notificationsOfDevice) {
-			notifications.push({ name: deviceName, notifications: [] });
-		}
-
-		setState(DEFAULT_STATE, espAddress);
-		// Send the response
-		reply.status(200);
-	}
-	catch (error) {
-		console.error(error);
-		reply.status(500).send({ success: false, message: 'An error occurred' });
-	}
 });
 
 // Returns the name of all registered devices on the server
@@ -287,7 +223,6 @@ server.listen({ port: 80, host:'0.0.0.0' }, function(err, address) {
 	console.log('Server is now listening on: ', address);
 });
 
-
 // Helpers
 // Hard to move since it modifies global notification state
 /**
@@ -295,7 +230,7 @@ server.listen({ port: 80, host:'0.0.0.0' }, function(err, address) {
  * @param {string} deviceName what device to update notification for
  * @returns the generated notification
  */
-function updateNotifications(deviceName: string) {
+export function updateNotifications(deviceName: string) {
 	// Returns notification object, if device name is already stored
 	// e.g. {name: "Planty", notifications: [1]}
 	const notificationsOfDevice = notifications.find(o => o.name === deviceName);
