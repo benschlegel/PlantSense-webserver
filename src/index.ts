@@ -17,7 +17,6 @@ const notifications: Notification[] = [defaultNotification];
 let espAddress = 'http://192.168.141.35';
 
 const server: Fastify.FastifyInstance = Fastify.fastify({ logger: true });
-
 // Declare a route
 server.get('/', function(request, reply) {
 	console.log('Got request, ' + request.ip);

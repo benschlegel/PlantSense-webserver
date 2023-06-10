@@ -1,5 +1,5 @@
-import { NotificationState } from 'src/types/enums';
-import { RgbPayload } from 'src/types/types';
+import { NotificationState } from '../types/enums';
+import { RgbPayload } from '../types/types';
 
 export const water: RgbPayload = {
 	red: 0,
