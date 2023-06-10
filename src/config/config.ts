@@ -1,3 +1,4 @@
+import { NotificationState } from 'src/types/enums';
 import { RgbPayload } from 'src/types/types';
 
 export const water: RgbPayload = {
@@ -23,3 +24,9 @@ export const defaultState: RgbPayload = {
 	green: 63,
 	blue: 0,
 };
+
+export const DEFAULT_STATE = NotificationState.NONE;
+export const DEFAULT_DEVICE_NAME = 'PlantSense - Planty';
+
+export const HTTP_TIMEOUT = 4000;
+export const ADDRESS_PREFIX = 'http://';

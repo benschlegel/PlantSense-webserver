@@ -4,13 +4,7 @@ import { Notification, RgbPayload } from './types/types';
 import { ClearNotificationQuery, NotificationParams, SendNotificationBody, SetStateBody } from './types/requests';
 import { generateRandomNotification } from './helpers/functions';
 import { setState, setLed } from './helpers/networkFunctions';
-
-const DEFAULT_STATE_NUMBER = -1;
-
-const DEFAULT_DEVICE_NAME = 'PlantSense - Planty';
-
-const HTTP_TIMEOUT = 4000;
-const ADDRESS_PREFIX = 'http://';
+import { HTTP_TIMEOUT, DEFAULT_DEVICE_NAME, ADDRESS_PREFIX, DEFAULT_STATE } from './config/config';
 
 // Initial notification (mock only)
 const defaultNotification: Notification = { name: 'Planty', notifications: [0, 1] };
@@ -98,7 +92,7 @@ server.post<{Body: SendNotificationBody}>('/registerDevice', async (request, rep
 			notifications.push({ name: deviceName, notifications: [] });
 		}
 
-		setState(DEFAULT_STATE_NUMBER, espAddress);
+		setState(DEFAULT_STATE, espAddress);
 		// Send the response
 		reply.status(200);
 	}
@@ -219,7 +213,7 @@ server.delete<{Querystring: ClearNotificationQuery}>('/clearNotification', async
 			setState(state, espAddress);
 		}
 		else {
-			setState(DEFAULT_STATE_NUMBER, espAddress);
+			setState(DEFAULT_STATE, espAddress);
 		}
 	}
 	reply.status(200);
