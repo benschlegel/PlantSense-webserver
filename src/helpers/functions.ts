@@ -1,3 +1,4 @@
+import { getNotifications } from '../index';
 import { NotificationState } from '../types/enums';
 
 /**
@@ -33,4 +34,30 @@ export function generateRandomNotification(): NotificationState {
 export function getNotificationStatusSize() {
 	const invalidStateEntries = 1;
 	return (Object.keys(NotificationState).length / 2) - invalidStateEntries;
+}
+
+/**
+ * Adds a random notification to a device. If the specified device does not exist, a new
+ * entry for it will be created.
+ * @param {string} deviceName what device to update notification for
+ * @returns the generated notification
+ */
+export function addRandomNotification(deviceName: string) {
+	// Returns notification object, if device name is already stored
+	// e.g. {name: "Planty", notifications: [1]}
+	const notifications = getNotifications();
+	const notificationsOfDevice = notifications.find(o => o.name === deviceName);
+
+	// Generate new random notification to "send"
+	const randomNotification = generateRandomNotification();
+
+	// If no notification object for device is stored, generate new one and add notification
+	if (!notificationsOfDevice) {
+		notifications.push({ name: deviceName, notifications: [randomNotification] });
+	}
+	else {
+		notificationsOfDevice.notifications.push(randomNotification);
+	}
+
+	return randomNotification;
 }

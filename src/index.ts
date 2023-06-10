@@ -176,31 +176,7 @@ server.post<{Body: RgbPayload}>('/led', async (request, reply) => {
 	try {
 		// Process the request and perform any necessary operations
 		const data = request.body; // Access the request body
-
-		// const red = data['red'];
-		// const green = data['green'];
-		// const blue = data['blue'];
-
-		// Return if payload is not valid
 		// TODO: check if incoming payload is valid before passing on
-		// if(!red || !green || !blue) {
-		//   console.log("validation failed")
-		//   reply.status(500).send({ success: false, message: 'An error occurred' });
-		//   return;
-		// }
-
-		// console.log("validation passed!")
-
-		// console.log("Red: " + red + ", green: " + green + ", blue: " + blue);
-
-		// const payload = {
-		//   "red": red,
-		//   "green": green,
-		//   "blue": blue
-		// }
-
-		// TODO: just pass data, no need to reformat (maybe)
-		// TODO: split routes into folders/files
 		// Send post request to esp (with incoming payload)
 		setLed(data, espAddress);
 
@@ -221,33 +197,9 @@ server.listen({ port: 80, host:'0.0.0.0' }, function(err, address) {
 	}
 
 	console.log('Server is now listening on: ', address);
+	console.log('Routes: ', server.printRoutes());
 });
 
 // Helpers
 // Hard to move since it modifies global notification state
-/**
- *
- * @param {string} deviceName what device to update notification for
- * @returns the generated notification
- */
-export function updateNotifications(deviceName: string) {
-	// Returns notification object, if device name is already stored
-	// e.g. {name: "Planty", notifications: [1]}
-	const notificationsOfDevice = notifications.find(o => o.name === deviceName);
-
-	// Generate new random notification to "send"
-	const randomNotification = generateRandomNotification();
-
-	// If no notification object for device is stored, generate new one and add notification
-	if (!notificationsOfDevice) {
-		notifications.push({ name: deviceName, notifications: [randomNotification] });
-		console.log('Adding new notifications for: ', deviceName);
-	}
-	else {
-		notificationsOfDevice.notifications.push(randomNotification);
-		console.log('Notifications for device \'' + deviceName + '\': ', notificationsOfDevice.notifications);
-	}
-
-	return randomNotification;
-}
 

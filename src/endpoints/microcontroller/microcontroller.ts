@@ -2,7 +2,8 @@ import { FastifyInstance } from 'fastify';
 import { ADDRESS_PREFIX, DEFAULT_DEVICE_NAME, DEFAULT_STATE, HTTP_TIMEOUT } from '../../config/config';
 import { setState } from '../../helpers/networkFunctions';
 import { SendNotificationBody } from '../../types/requests';
-import { updateNotifications, getEspAddress, setEspAddress, getNotifications } from '../../index';
+import { getEspAddress, setEspAddress, getNotifications } from '../../index';
+import { addRandomNotification } from '../../helpers/functions';
 
 export async function microcontrollerEndpoints(server: FastifyInstance) {
 	// Enable this if prefix exists
@@ -23,7 +24,7 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
 			console.log('Received request: ', deviceName);
 
 			// Update notifications array
-			const state = updateNotifications(deviceName);
+			const state = addRandomNotification(deviceName);
 
 			// Set state of microcontroller
 			if (deviceName === DEFAULT_DEVICE_NAME) {
