@@ -1,3 +1,5 @@
+import { NotificationState } from '../types/enums';
+
 /**
  * Returns a random integer between min (inclusive) and max (inclusive).
  * The value is no lower than min (or the next integer greater than min
@@ -12,9 +14,23 @@ export function getRandomInt(min: number, max: number) {
 }
 
 
-// Adjust this for different notifications
-// Returns random number between 0 and 5
-export function generateRandomNotification() {
-	// TODO: set max to enum.size or smth
-	return getRandomInt(0, 5);
+/**
+ * Generates a new random (and valid) notification based on all available 'NotificationStates'
+ * @returns a random notification state
+ */
+export function generateRandomNotification(): NotificationState {
+	const stateAmount = getNotificationStatusSize();
+
+	// substract 1 to get valid max index from amount of state entires
+	return getRandomInt(0, stateAmount - 1);
+}
+
+/**
+ * Gets the size of all valid 'NotificationState' entries.
+ * Modify 'invalidStateEntires', if more invalid entires are added.
+ * @returns number of entires in the 'NotificationState' enum
+ */
+export function getNotificationStatusSize() {
+	const invalidStateEntries = 1;
+	return (Object.keys(NotificationState).length / 2) - invalidStateEntries;
 }

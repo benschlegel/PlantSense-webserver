@@ -5,7 +5,6 @@ import { ClearNotificationQuery, NotificationParams, SendNotificationBody, SetSt
 import { generateRandomNotification } from './helpers/functions';
 import { setState, setLed } from './helpers/networkFunctions';
 
-
 const DEFAULT_STATE_NUMBER = -1;
 
 const DEFAULT_DEVICE_NAME = 'PlantSense - Planty';
@@ -278,7 +277,8 @@ server.listen({ port: 80, host:'0.0.0.0' }, function(err, address) {
 		server.log.error(err);
 		process.exit(1);
 	}
-	// Server is now listening on ${address}
+
+	console.log('Server is now listening on: ', address);
 });
 
 
