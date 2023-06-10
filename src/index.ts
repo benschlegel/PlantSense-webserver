@@ -1,30 +1,7 @@
 import fetch from 'node-fetch';
 import Fastify from 'fastify';
+import { water, sun, fertilizer, defaultState } from './config/config';
 
-// Constants (cant use export with vanilla js/node)
-const water = {
-	red: 0,
-	green: 0,
-	blue: 255,
-};
-
-const sun = {
-	red: 255,
-	green: 63,
-	blue: 0,
-};
-
-const fertilizer = {
-	red: 255,
-	green: 0,
-	blue: 0,
-};
-
-const defaultState = {
-	red: 0,
-	green: 63,
-	blue: 0,
-};
 
 const DEFAULT_STATE_NUMBER = -1;
 
