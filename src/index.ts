@@ -1,5 +1,5 @@
-// Require the framework and instantiate it
-// CommonJs
+import fetch from 'node-fetch';
+import Fastify from 'fastify';
 
 // Constants (cant use export with vanilla js/node)
 const water = {
@@ -30,11 +30,6 @@ const DEFAULT_STATE_NUMBER = -1;
 
 const DEFAULT_DEVICE_NAME = 'PlantSense - Planty';
 
-import fetch from 'node-fetch';
-import Fastify from 'fastify';
-
-// Update this for demo
-// const esp_url = "http://192.168.141.35";
 const HTTP_TIMEOUT = 4000;
 const ADDRESS_PREFIX = 'http://';
 
