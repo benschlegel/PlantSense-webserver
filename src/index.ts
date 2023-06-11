@@ -3,7 +3,7 @@ import * as Fastify from 'fastify';
 import { Notification, RgbPayload } from './types/types';
 import { ClearNotificationQuery, NotificationParams, SetStateBody } from './types/requests';
 import { setState, setLed } from './helpers/networkFunctions';
-import { DEFAULT_DEVICE_NAME, DEFAULT_STATE } from './config/config';
+import { DEFAULT_DEVICE_NAME, DEFAULT_STATE, VERSION_PREFIX } from './config/config';
 import { generalEndpoints } from './endpoints/server/server';
 import { microcontrollerEndpoints } from './endpoints/microcontroller/microcontroller';
 import { appEndpoints } from './endpoints/app/app';
@@ -26,10 +26,8 @@ export const server: Fastify.FastifyInstance = Fastify.fastify({ logger: true })
 // containing all endpoints
 // all routes from register will be prefixed with prefix
 server.register(generalEndpoints);
-// server.register(microcontrollerEndpoints, { prefix: '/mc' });
-// server.register(appEndpoints, { prefix: '/app' });
-server.register(microcontrollerEndpoints);
-server.register(appEndpoints);
+server.register(microcontrollerEndpoints, { prefix: VERSION_PREFIX + '/mc' });
+server.register(appEndpoints, { prefix: VERSION_PREFIX + '/app' });
 
 // Declare a route
 server.get('/', function(request, reply) {

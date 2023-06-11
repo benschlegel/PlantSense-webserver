@@ -30,3 +30,5 @@ export const DEFAULT_DEVICE_NAME = 'PlantSense - Planty';
 
 export const HTTP_TIMEOUT = 4000;
 export const ADDRESS_PREFIX = 'http://';
+
+export const VERSION_PREFIX = '/v1';
