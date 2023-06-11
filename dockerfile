@@ -1,6 +1,11 @@
-FROM --platform=linux/amd64 node:latest
+FROM --platform=linux/amd64 node:latest as BUILD_STAGE
 WORKDIR /app
 COPY . .
 RUN npm install
+RUN npm run build
 
-CMD ["node", "index.js"]
+FROM --platform=linux/amd64 node:alpine
+WORKDIR /app
+COPY --from=BUILD_STAGE /app/dist ./
+
+CMD ["node", "dist/index.js"]
