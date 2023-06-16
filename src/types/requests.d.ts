@@ -10,8 +10,8 @@ export type SendNotificationBody = {
  */
 export type RegisterDeviceBody = {
   deviceName: string;
-  mac: string;
-  localIP: string;
+  host: string;
+  localIP?: string;
 }
 
 export type NotificationParams = {
