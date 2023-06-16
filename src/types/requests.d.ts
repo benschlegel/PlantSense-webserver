@@ -1,7 +1,7 @@
 import { NotificationState } from './enums';
 
 export type SendNotificationBody = {
-  name: string;
+  host: string;
 }
 
 /**

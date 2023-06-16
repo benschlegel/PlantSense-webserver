@@ -61,7 +61,7 @@ server.get('/devices', async (request, reply) => {
 server.get<{Body: NotificationBody}>('/notifications', async (request, reply) => {
 	// gets the '?name=' parameter
 	// const deviceName = request.query.name;
-
+	const { hosts } = request.body;
 	// Find notifications for device
 	// const notificationsOfDevice = notifications.find(o => o.name === deviceName);
 	// if (!notificationsOfDevice) {

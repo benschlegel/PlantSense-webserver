@@ -21,18 +21,23 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
 		// Process the request and perform any necessary operations
 			const data = request.body; // Access the request body
 
-			const deviceName = data['name'];
-			console.log('Received request: ', deviceName);
+			const host = data['host'];
+			console.log('Received request: ', host);
+
+			// Update map with new notification
+
 
 			// Update notifications array
-			const state = addRandomNotification(deviceName);
+			// TODO: update map in addRandomNotification
+			const state = addRandomNotification(host);
 
 			// Set state of microcontroller
-			if (deviceName === DEFAULT_DEVICE_NAME) {
+			if (host === DEFAULT_DEVICE_NAME) {
 				setState(state, getEspAddress());
 			}
 
 			// Send the response
+			// TODO: send new state back as reply {state: newState}
 			reply.status(200);
 		}
 		catch (error) {
