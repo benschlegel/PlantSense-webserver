@@ -1,25 +1,28 @@
 import fetch from 'node-fetch';
 import * as Fastify from 'fastify';
-import { Notification, RgbPayload } from './types/types';
+import { Notification, RgbPayload, AddressRegisterMap, TempIP } from './types/types';
 import { ClearNotificationQuery, NotificationParams, SetStateBody } from './types/requests';
 import { setState, setLed } from './helpers/networkFunctions';
 import { DEFAULT_DEVICE_NAME, DEFAULT_STATE, VERSION_PREFIX } from './config/config';
 import { generalEndpoints } from './endpoints/server/server';
 import { microcontrollerEndpoints } from './endpoints/microcontroller/microcontroller';
 import { appEndpoints } from './endpoints/app/app';
+import { replacer } from './helpers/functions';
 
 // Initial notification (mock only)
 const defaultNotification: Notification = { name: 'Planty', notifications: [0, 1] };
 
 // Storage notifications for all devices
 const notifications: Notification[] = [defaultNotification];
+const ips: TempIP[] = [];
+const addressRegister: AddressRegisterMap = new Map();
 
 // TODO: change this to be arr of [{name: string(esp name), address: string}]
 // Change default value here, gets overriden by [POST: /registerDevice]
 let espAddress = 'http://192.168.141.35';
 
 // Export server so routes can be defined in different files/folders
-export const server: Fastify.FastifyInstance = Fastify.fastify({ logger: true });
+export const server: Fastify.FastifyInstance = Fastify.fastify({ logger: true, trustProxy: true });
 
 // Register all endpoints in different files/folders
 // To add a new file/folder, follow the structure of "endpoints/general/general.ts" and export a function
@@ -176,6 +179,15 @@ server.get('/deviceAddress', async (request, reply) => {
 });
 
 /**
+ * Gets all saved IP addresses
+ */
+server.get('/ips', async (request, reply) => {
+	const stringMap = JSON.stringify(addressRegister, replacer);
+	return reply.status(200).send(stringMap);
+});
+
+
+/**
  * Set the color of the LED-strip connected to the microcontroller.
  * @param rgb takes an object of type 'RgbPayload' in http body. ({red: 0-255, green: 0-255, blue: 0-255})
  */
@@ -218,4 +230,12 @@ export function getEspAddress() {
 
 export function getNotifications() {
 	return notifications;
+}
+
+export function getIPs() {
+	return ips;
+}
+
+export function getAddressRegister() {
+	return addressRegister;
 }

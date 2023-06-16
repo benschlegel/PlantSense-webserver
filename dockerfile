@@ -8,4 +8,4 @@ FROM --platform=linux/amd64 node:alpine
 WORKDIR /app
 COPY --from=BUILD_STAGE /app/dist ./
 
-CMD ["node", "dist/index.js"]
+CMD ["node", "index.js"]

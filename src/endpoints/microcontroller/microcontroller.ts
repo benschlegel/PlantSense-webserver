@@ -1,9 +1,9 @@
 import { FastifyInstance } from 'fastify';
 import { ADDRESS_PREFIX, DEFAULT_DEVICE_NAME, DEFAULT_STATE, HTTP_TIMEOUT } from '../../config/config';
 import { setState } from '../../helpers/networkFunctions';
-import { SendNotificationBody } from '../../types/requests';
-import { getEspAddress, setEspAddress, getNotifications } from '../../index';
-import { addRandomNotification } from '../../helpers/functions';
+import { RegisterDeviceBody, SendNotificationBody } from '../../types/requests';
+import { getEspAddress, setEspAddress, getNotifications, getIPs } from '../../index';
+import { addRandomNotification, putAddressRegisterEntry } from '../../helpers/functions';
 
 export async function microcontrollerEndpoints(server: FastifyInstance) {
 	// Enable this if prefix exists
@@ -74,14 +74,18 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
    * Endpoint that esp32 calls on startup to register itself (if not already registered on server)
    * Needs refactoring on esp32 microcontroller side, for now almost duplicate endpoint (see "/sendNotification")
    */
-	server.post<{Body: SendNotificationBody}>('/registerDevice', async (request, reply) => {
+	server.post<{Body: RegisterDeviceBody}>('/registerDevice', async (request, reply) => {
 		try {
 			const newAddr = ADDRESS_PREFIX + request.ip;
 			setEspAddress(newAddr);
 			console.log('Registered with address: ', newAddr);
+			console.log('REQUEST headers', request.headers);
 			// Process the request and perform any necessary operations
-			const data = request.body; // Access the request body
-			const deviceName = data['name'];
+			const { deviceName, localIP: privateIP, mac } = request.body; // Access the request body
+			const publicIP = request.ip;
+			getIPs().push({ public: publicIP, deviceName, private: privateIP, mac });
+
+			putAddressRegisterEntry(publicIP, mac, { deviceName, localIP: privateIP });
 
 			// Register device in notifications array (if it does not already exist)
 			const notifications = getNotifications();
@@ -89,9 +93,9 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
 			if (!notificationsOfDevice) {
 				notifications.push({ name: deviceName, notifications: [] });
 			}
-
 			setState(DEFAULT_STATE, newAddr);
 			// Send the response
+			// TODO: also send back current status
 			reply.status(200);
 		}
 		catch (error) {

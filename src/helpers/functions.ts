@@ -1,4 +1,5 @@
-import { getNotifications } from '../index';
+import { DeviceInfo } from 'src/types/types';
+import { getAddressRegister, getNotifications } from '../index';
 import { NotificationState } from '../types/enums';
 
 /**
@@ -60,4 +61,41 @@ export function addRandomNotification(deviceName: string) {
 	}
 
 	return randomNotification;
+}
+
+/**
+ * Add new entry to global address register based on parameters.
+ * For duplicate entries (same public ip + mac address), entries will be overriden.
+ * Otherwise, new entries will be added.
+ * @param publicIP public ip of new entry
+ * @param mac mac address of new entry
+ * @param deviceInfo device info of new entry
+ */
+export function putAddressRegisterEntry(publicIP: string, mac: string, deviceInfo: DeviceInfo) {
+	const register = getAddressRegister();
+	const IPMap = register.get(publicIP);
+
+	if (IPMap) {
+		IPMap.set(mac, deviceInfo);
+	}
+	else {
+		const newEntry: Map<string, DeviceInfo> = new Map();
+		newEntry.set(mac, deviceInfo);
+		register.set(publicIP, newEntry);
+	}
+}
+
+/**
+ * used to stringify nested map
+ */
+export function replacer(key: any, value: any) {
+	if (value instanceof Map) {
+		return {
+			dataType: 'Map',
+			value: Array.from(value.entries()), // or with spread: value: [...value]
+		};
+	}
+	else {
+		return value;
+	}
 }

@@ -9,6 +9,20 @@ export type RgbPayload = {
   blue: RgbRange;
 }
 
+export type DeviceInfo = {
+  localIP: string;
+  deviceName: string;
+}
+
+export type TempIP = {
+  private: string;
+  public: string;
+  mac: string;
+  deviceName: string;
+}
+
+export type AddressRegisterMap = Map<string, Map<string, DeviceInfo>>
+
 // Special typescript types
 type Enumerate<N extends number, Acc extends number[] = []> = Acc['length'] extends N
   ? Acc[number]

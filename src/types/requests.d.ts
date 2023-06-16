@@ -4,8 +4,14 @@ export type SendNotificationBody = {
   name: string;
 }
 
+/**
+ * private IP of registering device (microcontroller)
+ * + device name
+ */
 export type RegisterDeviceBody = {
-  name: string;
+  deviceName: string;
+  mac: string;
+  localIP: string;
 }
 
 export type NotificationParams = {
