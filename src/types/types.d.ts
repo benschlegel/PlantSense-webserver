@@ -10,7 +10,7 @@ export type RgbPayload = {
 }
 
 export type DeviceInfo = {
-  localIP: string;
+  notifications: Notification[];
   deviceName: string;
 }
 
@@ -21,7 +21,7 @@ export type TempIP = {
   deviceName: string;
 }
 
-export type AddressRegisterMap = Map<string, Map<string, DeviceInfo>>
+export type AddressRegisterMap = Map<string, DeviceInfo>
 
 // Special typescript types
 type Enumerate<N extends number, Acc extends number[] = []> = Acc['length'] extends N

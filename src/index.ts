@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import * as Fastify from 'fastify';
 import { Notification, RgbPayload, AddressRegisterMap, TempIP } from './types/types';
-import { ClearNotificationQuery, NotificationParams, SetStateBody } from './types/requests';
+import { ClearNotificationQuery, NotificationBody, SetStateBody } from './types/requests';
 import { setState, setLed } from './helpers/networkFunctions';
 import { DEFAULT_DEVICE_NAME, DEFAULT_STATE, VERSION_PREFIX } from './config/config';
 import { generalEndpoints } from './endpoints/server/server';
@@ -12,10 +12,12 @@ import { replacer } from './helpers/functions';
 // Initial notification (mock only)
 const defaultNotification: Notification = { name: 'Planty', notifications: [0, 1] };
 
+
 // Storage notifications for all devices
 const notifications: Notification[] = [defaultNotification];
 const ips: TempIP[] = [];
 const addressRegister: AddressRegisterMap = new Map();
+
 
 // TODO: change this to be arr of [{name: string(esp name), address: string}]
 // Change default value here, gets overriden by [POST: /registerDevice]
@@ -56,19 +58,19 @@ server.get('/devices', async (request, reply) => {
  * Takes 'name' as a query parameter (?name=) to specify device.
  * @returns all notifications of a single device.
  */
-server.get<{Querystring: NotificationParams}>('/notifications', async (request, reply) => {
+server.get<{Body: NotificationBody}>('/notifications', async (request, reply) => {
 	// gets the '?name=' parameter
-	const deviceName = request.query.name;
+	// const deviceName = request.query.name;
 
 	// Find notifications for device
-	const notificationsOfDevice = notifications.find(o => o.name === deviceName);
-	if (!notificationsOfDevice) {
-		console.log('Invalid device');
-		reply.status(404);
-	}
-	else {
-		reply.status(200).send(notificationsOfDevice.notifications);
-	}
+	// const notificationsOfDevice = notifications.find(o => o.name === deviceName);
+	// if (!notificationsOfDevice) {
+	// 	console.log('Invalid device');
+	// 	reply.status(404);
+	// }
+	// else {
+	// 	reply.status(200).send(notificationsOfDevice.notifications);
+	// }
 });
 
 /**

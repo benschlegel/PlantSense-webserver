@@ -67,21 +67,19 @@ export function addRandomNotification(deviceName: string) {
  * Add new entry to global address register based on parameters.
  * For duplicate entries (same public ip + mac address), entries will be overriden.
  * Otherwise, new entries will be added.
- * @param publicIP public ip of new entry
- * @param mac mac address of new entry
+ * @param host mac address of new entry
  * @param deviceInfo device info of new entry
  */
-export function putAddressRegisterEntry(publicIP: string, mac: string, deviceInfo: DeviceInfo) {
+export function putAddressRegisterEntry(host: string, deviceInfo: DeviceInfo) {
 	const register = getAddressRegister();
-	const IPMap = register.get(publicIP);
+	const value = register.get(host);
 
-	if (IPMap) {
-		IPMap.set(mac, deviceInfo);
+	if (value) {
+		value.deviceName = deviceInfo.deviceName;
+		register.set(host, value);
 	}
 	else {
-		const newEntry: Map<string, DeviceInfo> = new Map();
-		newEntry.set(mac, deviceInfo);
-		register.set(publicIP, newEntry);
+		register.set(host, deviceInfo);
 	}
 }
 

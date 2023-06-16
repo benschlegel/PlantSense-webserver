@@ -81,18 +81,17 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
 			console.log('Registered with address: ', newAddr);
 			console.log('REQUEST headers', request.headers);
 			// Process the request and perform any necessary operations
-			const { deviceName, localIP: privateIP, mac } = request.body; // Access the request body
-			const publicIP = request.ip;
-			getIPs().push({ public: publicIP, deviceName, private: privateIP, mac });
+			const { deviceName, host } = request.body; // Access the request body		const publicIP = request.ip;
 
-			putAddressRegisterEntry(publicIP, mac, { deviceName, localIP: privateIP });
+
+			putAddressRegisterEntry(host, { deviceName, notifications: [] });
 
 			// Register device in notifications array (if it does not already exist)
-			const notifications = getNotifications();
-			const notificationsOfDevice = notifications.find(o => o.name === deviceName);
-			if (!notificationsOfDevice) {
-				notifications.push({ name: deviceName, notifications: [] });
-			}
+			// const notifications = getNotifications();
+			// const notificationsOfDevice = notifications.find(o => o.name === deviceName);
+			// if (!notificationsOfDevice) {
+			// 	notifications.push({ name: deviceName, notifications: [] });
+			// }
 			setState(DEFAULT_STATE, newAddr);
 			// Send the response
 			// TODO: also send back current status

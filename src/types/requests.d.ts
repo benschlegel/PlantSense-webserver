@@ -18,6 +18,10 @@ export type NotificationParams = {
   name: string;
 }
 
+export type NotificationBody = {
+  hosts: string[];
+}
+
 export type SetStateBody = {
   state: NotificationState
 }
