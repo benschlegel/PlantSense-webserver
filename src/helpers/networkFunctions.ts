@@ -51,8 +51,7 @@ export function setState(state: NotificationState, espAddress: string) {
 	}
 	if (state === NotificationState.LOW_SOIL || state === NotificationState.HIGH_SOIL) {
 		setLed(fertilizer, espAddress);
-	}
-	else if (state === NotificationState.NONE) {
+	} else if (state === NotificationState.NONE) {
 		setLed(defaultState, espAddress);
 	}
 }

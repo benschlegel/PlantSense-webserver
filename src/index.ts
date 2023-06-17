@@ -229,7 +229,7 @@ server.listen({ port: 80, host:'0.0.0.0' }, function(err, address) {
 });
 
 // simply add Planty to the address register, mock
-server.get<{Querystring: MockAmount}>('/addPlanty', async(request, reply) => {
+server.get<{Querystring: MockAmount}>('/addPlanty', async (request, reply) => {
 	console.log('adding Planty to addressregister');
 	let amount = request.query['amount'];
 	if (!amount) amount = 1;

@@ -1,5 +1,5 @@
 import { DeviceInfo } from 'src/types/types';
-import { getAddressRegister, getNotifications } from '../index';
+import { getAddressRegister } from '../index';
 import { NotificationState } from '../types/enums';
 
 /**
