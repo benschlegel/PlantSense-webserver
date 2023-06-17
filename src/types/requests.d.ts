@@ -27,6 +27,6 @@ export type SetStateBody = {
 }
 
 export type ClearNotificationQuery = {
-  name: string;
+  host: string;
   index: number;
 }

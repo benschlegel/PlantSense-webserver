@@ -1,23 +1,18 @@
 import fetch from 'node-fetch';
 import * as Fastify from 'fastify';
-import { Notification, RgbPayload, AddressRegisterMap, TempIP } from './types/types';
+import { RgbPayload, AddressRegisterMap, TempIP } from './types/types';
 import { ClearNotificationQuery, NotificationBody, SetStateBody } from './types/requests';
 import { setState, setLed } from './helpers/networkFunctions';
-import { DEFAULT_DEVICE_NAME, DEFAULT_STATE, VERSION_PREFIX } from './config/config';
+import { VERSION_PREFIX } from './config/config';
 import { generalEndpoints } from './endpoints/server/server';
 import { microcontrollerEndpoints } from './endpoints/microcontroller/microcontroller';
 import { appEndpoints } from './endpoints/app/app';
 import { replacer } from './helpers/functions';
+import { DeviceInfo, MockAmount } from './types/types';
 
-// Initial notification (mock only)
-const defaultNotification: Notification = { name: 'Planty', notifications: [0, 1] };
-
-
-// Storage notifications for all devices
-const notifications: Notification[] = [defaultNotification];
 const ips: TempIP[] = [];
+// stores all devices and their notifications
 const addressRegister: AddressRegisterMap = new Map();
-
 
 // TODO: change this to be arr of [{name: string(esp name), address: string}]
 // Change default value here, gets overriden by [POST: /registerDevice]
@@ -45,32 +40,43 @@ server.get('/', function(request, reply) {
  * e.g: (["Planty", "Device2"])
  */
 server.get('/devices', async (request, reply) => {
-	const devices = [];
-	for (const element of notifications) {
-		devices.push(element.name);
-	}
+	const devices:string[] = [];
+
+	console.log(addressRegister.size);
+
+	addressRegister.forEach(element => {
+		devices.push(element.deviceName);
+	});
+
 
 	reply.send(devices);
 });
 
 /**
  * Gets all notifications for a specific device.
- * Takes 'name' as a query parameter (?name=) to specify device.
- * @returns all notifications of a single device.
+ * Body specifies all hosts to search for
+ * @returns all notifications for given devices.
  */
-server.get<{Body: NotificationBody}>('/notifications', async (request, reply) => {
-	// gets the '?name=' parameter
-	// const deviceName = request.query.name;
-	const { hosts } = request.body;
-	// Find notifications for device
-	// const notificationsOfDevice = notifications.find(o => o.name === deviceName);
-	// if (!notificationsOfDevice) {
-	// 	console.log('Invalid device');
-	// 	reply.status(404);
-	// }
-	// else {
-	// 	reply.status(200).send(notificationsOfDevice.notifications);
-	// }
+server.get<{Querystring: NotificationBody}>('/notifications', async (request, reply) => {
+	console.log(request.query);
+	const hosts = request.query['hosts'];
+	console.log(hosts);
+	const resultArray: Array<DeviceInfo> = [];
+
+	for (const host of hosts) {
+		console.log('current host ', host);
+		const device = addressRegister.get(host);
+		console.log('current device ', device);
+		if (device) resultArray.push(device);
+	}
+
+	if (resultArray.length < 1) {
+		console.warn('invalid hosts specified!');
+		reply.status(404);
+	} else {
+		console.log('found notifications for ' + resultArray.length + ' device(s) of ' + hosts.length + ' device(s) given');
+		reply.status(200).send(resultArray);
+	}
 });
 
 /**
@@ -78,10 +84,14 @@ server.get<{Body: NotificationBody}>('/notifications', async (request, reply) =>
  * Scheme: [{name: string, notifications: number}]
  */
 server.get('/allNotifications', async (req, reply) => {
-	if (!notifications) {
-		reply.status(500);
-		return;
-	}
+	if (addressRegister.size == 0) reply.status(500);
+
+	const notifications:DeviceInfo[] = [];
+
+	addressRegister.forEach(element => {
+		notifications.push(element);
+	});
+
 	reply.status(200).send(notifications);
 });
 
@@ -99,8 +109,7 @@ server.post<{Body: SetStateBody}>('/setState', async (request, reply) => {
 
 		setState(stateBody, espAddress);
 		reply.status(200);
-	}
-	catch (error) {
+	} catch (error) {
 		console.error(error);
 		reply.status(500).send({ success: false, message: 'An error occurred' });
 	}
@@ -121,8 +130,7 @@ server.post('/toggleState', (req, reply) => {
 			});
 
 		reply.status(200);
-	}
-	catch (error) {
+	} catch (error) {
 		console.error(error);
 		reply.status(500).send({ success: false, message: 'An error occurred' });
 	}
@@ -130,46 +138,46 @@ server.post('/toggleState', (req, reply) => {
 
 /**
  * Endpoint to delete a single notification of a single device
- * Takes two url parameters: ?name: name of the device, ?index: index of the notification to be deleted
+ * Takes two url parameters: ?host: host of the device, ?index: index of the notification to be deleted
  */
 server.delete<{Querystring: ClearNotificationQuery}>('/clearNotification', async (request, reply) => {
-	if (!notifications) {
+	if (addressRegister.size == 0) {
 		reply.status(500);
 		return;
 	}
 
 	// gets the '?name=' and '?index=' parameter
-	const deviceName = request.query.name;
+	const requestHost = request.query.host;
 	const index = request.query.index;
 
 	// Get notification array of device, 404 if device was not found
-	const notificationsOfDevice = notifications.find(o => o.name === deviceName);
-	if (!notificationsOfDevice) {
+	const deviceIsFound = addressRegister.has(requestHost);
+
+	if (!deviceIsFound) {
+		reply.status(404);
+		return;
+	}
+
+	const currentDevice = addressRegister.get(requestHost);
+
+	if (!currentDevice) {
 		reply.status(404);
 		return;
 	}
 
 	// Return with 400, if index is invalid
-	if (index < 0 || index > notificationsOfDevice.notifications.length - 1) {
+	if (index < 0 || index > currentDevice.notifications.length - 1) {
 		reply.status(400);
 		return;
 	}
+
+
 	// Remove notification at index from array
-	notificationsOfDevice.notifications.splice(index, 1);
+	currentDevice.notifications.splice(index, 1);
+	// paranoid
+	addressRegister.set(requestHost, currentDevice);
 
-	// After removing notification, set state to last notification entry
-	const notificationLength = notificationsOfDevice.notifications.length;
 	// If there are remaining notifications, pick most recent one after deleting
-
-	if (deviceName === DEFAULT_DEVICE_NAME) {
-		if (notificationLength > 0) {
-			const state = notificationsOfDevice.notifications[notificationsOfDevice.notifications.length - 1];
-			setState(state, espAddress);
-		}
-		else {
-			setState(DEFAULT_STATE, espAddress);
-		}
-	}
 	reply.status(200);
 });
 
@@ -203,8 +211,7 @@ server.post<{Body: RgbPayload}>('/led', async (request, reply) => {
 
 		// Send the response
 		reply.send({ success: true, message: 'Data received successfully' });
-	}
-	catch (error) {
+	} catch (error) {
 		console.error(error);
 		reply.status(500).send({ success: false, message: 'An error occurred' });
 	}
@@ -221,6 +228,23 @@ server.listen({ port: 80, host:'0.0.0.0' }, function(err, address) {
 	console.log('Routes: ', server.printRoutes());
 });
 
+// simply add Planty to the address register, mock
+server.get<{Querystring: MockAmount}>('/addPlanty', async(request, reply) => {
+	console.log('adding Planty to addressregister');
+	let amount = request.query['amount'];
+	if (!amount) amount = 1;
+
+	for (let i = 0; i < amount; i++) {
+		const name = 'Planty' + i;
+		const host = 'testHost' + i;
+		const planty = { deviceName: name, notifications: [0, 1] };
+		addressRegister.set(host, planty);
+	}
+
+	console.log('added ' + amount + ' planty(s)! addressregister size: ', addressRegister.size);
+	reply.send(200);
+});
+
 // Setters and getters
 export function setEspAddress(newAddress: string) {
 	espAddress = newAddress;
@@ -228,10 +252,6 @@ export function setEspAddress(newAddress: string) {
 
 export function getEspAddress() {
 	return espAddress;
-}
-
-export function getNotifications() {
-	return notifications;
 }
 
 export function getIPs() {

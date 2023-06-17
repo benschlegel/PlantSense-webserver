@@ -46,18 +46,20 @@ export function getNotificationStatusSize() {
 export function addRandomNotification(host: string) {
 	// Returns notification object, if device name is already stored
 	// e.g. {name: "Planty", notifications: [1]}
-	const notifications = getNotifications();
-	const notificationsOfDevice = notifications.find(o => o.name === host);
+	const addressRegister = getAddressRegister();
+	const isDeviceInAddressRegister = addressRegister.has(host);
 
 	// Generate new random notification to "send"
 	const randomNotification = generateRandomNotification();
 
 	// If no notification object for device is stored, generate new one and add notification
-	if (!notificationsOfDevice) {
-		notifications.push({ name: host, notifications: [randomNotification] });
-	}
-	else {
-		notificationsOfDevice.notifications.push(randomNotification);
+	if (!isDeviceInAddressRegister) {
+		addressRegister.set(host,
+			{ deviceName: 'null', notifications: [randomNotification] });
+	} else {
+		const deviceInfo = addressRegister.get(host);
+		// Notifications reworken? oder actual name der notification?
+		deviceInfo?.notifications.push(randomNotification);
 	}
 
 	return randomNotification;
@@ -77,8 +79,7 @@ export function putAddressRegisterEntry(host: string, deviceInfo: DeviceInfo) {
 	if (value) {
 		value.deviceName = deviceInfo.deviceName;
 		register.set(host, value);
-	}
-	else {
+	} else {
 		register.set(host, deviceInfo);
 	}
 }
@@ -92,8 +93,7 @@ export function replacer(key: any, value: any) {
 			dataType: 'Map',
 			value: Array.from(value.entries()), // or with spread: value: [...value]
 		};
-	}
-	else {
+	} else {
 		return value;
 	}
 }

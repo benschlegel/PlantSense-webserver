@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { ADDRESS_PREFIX, DEFAULT_DEVICE_NAME, DEFAULT_STATE, HTTP_TIMEOUT } from '../../config/config';
 import { setState } from '../../helpers/networkFunctions';
 import { RegisterDeviceBody, SendNotificationBody } from '../../types/requests';
-import { getEspAddress, setEspAddress, getNotifications, getIPs } from '../../index';
+import { getEspAddress, setEspAddress, getNotifications, getIPs, getAddressRegister } from '../../index';
 import { addRandomNotification, putAddressRegisterEntry } from '../../helpers/functions';
 
 export async function microcontrollerEndpoints(server: FastifyInstance) {
@@ -18,18 +18,20 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
    */
 	server.post<{Body: SendNotificationBody}>('/sendNotification', async (request, reply) => {
 		try {
-		// Process the request and perform any necessary operations
+			// Process the request and perform any necessary operations
 			const data = request.body; // Access the request body
 
 			const host = data['host'];
 			console.log('Received request: ', host);
 
 			// Update map with new notification
-
+			
 
 			// Update notifications array
 			// TODO: update map in addRandomNotification
 			const state = addRandomNotification(host);
+
+			
 
 			// Set state of microcontroller
 			if (host === DEFAULT_DEVICE_NAME) {
@@ -39,8 +41,7 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
 			// Send the response
 			// TODO: send new state back as reply {state: newState}
 			reply.status(200);
-		}
-		catch (error) {
+		} catch (error) {
 			console.error(error);
 			reply.status(500).send({ success: false, message: 'An error occurred' });
 		}
@@ -64,13 +65,11 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
 				reply.status(200);
 			});
 			console.log(response);
-		}
-		catch (error) {
+		} catch (error) {
 		// 503 service unavailable
 			console.log('Error:', error);
 			reply.status(503);
-		}
-		finally {
+		} finally {
 			clearTimeout(timeoutId);
 		}
 	});
@@ -101,8 +100,7 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
 			// Send the response
 			// TODO: also send back current status
 			reply.status(200);
-		}
-		catch (error) {
+		} catch (error) {
 			console.error(error);
 			reply.status(500).send({ success: false, message: 'An error occurred' });
 		}

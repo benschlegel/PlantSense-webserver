@@ -1,7 +1,4 @@
-export type Notification = {
-  name: string;
-  notifications: number[];
-}
+import { NotificationState } from './enums';
 
 export type RgbPayload = {
   red: RgbRange;
@@ -10,8 +7,12 @@ export type RgbPayload = {
 }
 
 export type DeviceInfo = {
-  notifications: Notification[];
   deviceName: string;
+  notifications: NotificationState[];
+}
+
+export type MockAmount = {
+  amount: number;
 }
 
 export type TempIP = {
