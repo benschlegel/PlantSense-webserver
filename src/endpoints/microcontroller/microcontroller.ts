@@ -1,9 +1,9 @@
 import { FastifyInstance } from 'fastify';
-import { ADDRESS_PREFIX, DEFAULT_STATE, HTTP_TIMEOUT } from '../../config/config';
-import { setState } from '../../helpers/networkFunctions';
+import { HTTP_TIMEOUT } from '../../config/config';
 import { RegisterDeviceBody, SendNotificationBody } from '../../types/requests';
-import { getEspAddress, setEspAddress, getAddressRegister } from '../../index';
+import { getEspAddress, getAddressRegister } from '../../index';
 import { addRandomNotification, putAddressRegisterEntry } from '../../helpers/functions';
+import { NotificationState } from 'src/types/enums';
 
 export async function microcontrollerEndpoints(server: FastifyInstance) {
 	// Enable this if prefix exists
@@ -36,6 +36,13 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
 
 			// generate new notification
 			const newNotificationState = addRandomNotification(host);
+
+			// If no new notification could be generated, return early
+			if (newNotificationState === NotificationState.NONE) {
+				reply.status(500);
+				return;
+			}
+
 			// Update notifications of device
 			deviceInfo.notifications.push(newNotificationState);
 
@@ -82,24 +89,9 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
    */
 	server.post<{Body: RegisterDeviceBody}>('/registerDevice', async (request, reply) => {
 		try {
-			const newAddr = ADDRESS_PREFIX + request.ip;
-			setEspAddress(newAddr);
-			console.log('Registered with address: ', newAddr);
-			console.log('REQUEST headers', request.headers);
-			// Process the request and perform any necessary operations
 			const { deviceName, host } = request.body; // Access the request body		const publicIP = request.ip;
 
-
 			putAddressRegisterEntry(host, { deviceName, notifications: [] });
-
-			// Register device in notifications array (if it does not already exist)
-			// const notifications = getNotifications();
-			// const notificationsOfDevice = notifications.find(o => o.name === deviceName);
-			// if (!notificationsOfDevice) {
-			// 	notifications.push({ name: deviceName, notifications: [] });
-			// }
-			setState(DEFAULT_STATE, newAddr);
-			// Send the response
 			// TODO: also send back current status
 			reply.status(200);
 		} catch (error) {

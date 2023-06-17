@@ -54,23 +54,25 @@ server.get('/devices', async (request, reply) => {
 
 /**
  * Gets all notifications for a specific device.
- * Body specifies all hosts to search for
- * @returns all notifications for given devices.
+ * Query specifies all hosts to search for (multiple '?hosts=' chained)
+ * @returns all notifications for given devices or 404 if none of the hosts were valid.
  */
 server.get<{Querystring: NotificationBody}>('/notifications', async (request, reply) => {
-	console.log(request.query);
 	const hosts = request.query['hosts'];
 	console.log(hosts);
 	const resultArray: Array<DeviceInfo> = [];
 
+	// Return early if request is bad
+	if (!hosts || hosts.length === 0) {
+		reply.status(500);
+	}
+
 	for (const host of hosts) {
-		console.log('current host ', host);
 		const device = addressRegister.get(host);
-		console.log('current device ', device);
 		if (device) resultArray.push(device);
 	}
 
-	if (resultArray.length < 1) {
+	if (resultArray.length === 0) {
 		console.warn('invalid hosts specified!');
 		reply.status(404);
 	} else {
@@ -151,13 +153,6 @@ server.delete<{Querystring: ClearNotificationQuery}>('/clearNotification', async
 	const index = request.query.index;
 
 	// Get notification array of device, 404 if device was not found
-	const deviceIsFound = addressRegister.has(requestHost);
-
-	if (!deviceIsFound) {
-		reply.status(404);
-		return;
-	}
-
 	const currentDevice = addressRegister.get(requestHost);
 
 	if (!currentDevice) {
@@ -170,7 +165,6 @@ server.delete<{Querystring: ClearNotificationQuery}>('/clearNotification', async
 		reply.status(400);
 		return;
 	}
-
 
 	// Remove notification at index from array
 	currentDevice.notifications.splice(index, 1);

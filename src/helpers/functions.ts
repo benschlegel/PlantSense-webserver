@@ -43,25 +43,21 @@ export function getNotificationStatusSize() {
  * @param {string} host what device to update notification for
  * @returns the generated notification
  */
-export function addRandomNotification(host: string) {
+export function addRandomNotification(host: string): NotificationState {
 	// Returns notification object, if device name is already stored
-	// e.g. {name: "Planty", notifications: [1]}
 	const addressRegister = getAddressRegister();
-	const isDeviceInAddressRegister = addressRegister.has(host);
+	const deviceInfo = addressRegister.get(host);
+
+	// If no notification object for device is stored, return "none" state
+	if (!deviceInfo) {
+		return NotificationState.NONE;
+	}
 
 	// Generate new random notification to "send"
 	const randomNotification = generateRandomNotification();
 
-	// If no notification object for device is stored, generate new one and add notification
-	if (!isDeviceInAddressRegister) {
-		addressRegister.set(host,
-			{ deviceName: 'null', notifications: [randomNotification] });
-	} else {
-		const deviceInfo = addressRegister.get(host);
-		// Notifications reworken? oder actual name der notification?
-		deviceInfo?.notifications.push(randomNotification);
-	}
-
+	// Add new notification to array and return generated one
+	deviceInfo.notifications.push(randomNotification);
 	return randomNotification;
 }
 
@@ -74,11 +70,20 @@ export function addRandomNotification(host: string) {
  */
 export function putAddressRegisterEntry(host: string, deviceInfo: DeviceInfo) {
 	const register = getAddressRegister();
-	const value = register.get(host);
+	const device = register.get(host);
 
-	if (value) {
-		value.deviceName = deviceInfo.deviceName;
-		register.set(host, value);
+	if (device) {
+		// Update deviceName
+		device.deviceName = deviceInfo.deviceName;
+
+		// Check if notifications already exist and only update if not
+		const oldNotifications = device.notifications;
+		if (!oldNotifications) {
+			device.notifications = deviceInfo.notifications;
+		}
+
+		// Save result
+		register.set(host, device);
 	} else {
 		register.set(host, deviceInfo);
 	}
