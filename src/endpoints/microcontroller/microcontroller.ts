@@ -1,8 +1,8 @@
 import { FastifyInstance } from 'fastify';
-import { ADDRESS_PREFIX, DEFAULT_DEVICE_NAME, DEFAULT_STATE, HTTP_TIMEOUT } from '../../config/config';
+import { ADDRESS_PREFIX, DEFAULT_STATE, HTTP_TIMEOUT } from '../../config/config';
 import { setState } from '../../helpers/networkFunctions';
 import { RegisterDeviceBody, SendNotificationBody } from '../../types/requests';
-import { getEspAddress, setEspAddress, getNotifications, getIPs, getAddressRegister } from '../../index';
+import { getEspAddress, setEspAddress, getAddressRegister } from '../../index';
 import { addRandomNotification, putAddressRegisterEntry } from '../../helpers/functions';
 
 export async function microcontrollerEndpoints(server: FastifyInstance) {
@@ -24,23 +24,28 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
 			const host = data['host'];
 			console.log('Received request: ', host);
 
-			// Update map with new notification
-			
+			// get register and check if host valid
+			const addressRegister = getAddressRegister();
 
-			// Update notifications array
-			// TODO: update map in addRandomNotification
-			const state = addRandomNotification(host);
-
-			
-
-			// Set state of microcontroller
-			if (host === DEFAULT_DEVICE_NAME) {
-				setState(state, getEspAddress());
+			if (!addressRegister.has(host)) {
+				console.log('given host not found!');
+				reply.status(500);
+				return;
 			}
+			const deviceInfo = addressRegister.get(host);
+			addressRegister.get(host);
 
-			// Send the response
-			// TODO: send new state back as reply {state: newState}
-			reply.status(200);
+			// generate new notification
+			const newNotificationState = addRandomNotification(host);
+			// Update notifications of device
+			deviceInfo?.notifications.push(newNotificationState);
+
+			// Send the response, return the new state
+			const length = addressRegister.get(host)?.notifications.length;
+			const notificationsArr = addressRegister.get(host)?.notifications;
+			if (notificationsArr && length) {
+				reply.status(200).send(notificationsArr[length - 1]);
+			}
 		} catch (error) {
 			console.error(error);
 			reply.status(500).send({ success: false, message: 'An error occurred' });
