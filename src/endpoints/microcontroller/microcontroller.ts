@@ -12,9 +12,9 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
 	// });
 
 	/**
-   * Endpoint to receive notification from esp32 microcontroller (contains device name)
+   * Endpoint to receive notification from esp32 microcontroller (contains host address)
    * needs payload with scheme:
-   * {name: "device name here"}
+   * {host: "host address here"}
    */
 	server.post<{Body: SendNotificationBody}>('/sendNotification', async (request, reply) => {
 		try {
@@ -22,30 +22,27 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
 			const data = request.body; // Access the request body
 
 			const host = data['host'];
-			console.log('Received request: ', host);
 
 			// get register and check if host valid
 			const addressRegister = getAddressRegister();
+			const deviceInfo = addressRegister.get(host);
 
-			if (!addressRegister.has(host)) {
-				console.log('given host not found!');
-				reply.status(500);
+			// return early if host is invalid
+			if (!deviceInfo) {
+				console.log('msg="given host not found!"');
+				reply.status(404);
 				return;
 			}
-			const deviceInfo = addressRegister.get(host);
-			addressRegister.get(host);
 
 			// generate new notification
 			const newNotificationState = addRandomNotification(host);
 			// Update notifications of device
-			deviceInfo?.notifications.push(newNotificationState);
+			deviceInfo.notifications.push(newNotificationState);
 
 			// Send the response, return the new state
-			const length = addressRegister.get(host)?.notifications.length;
-			const notificationsArr = addressRegister.get(host)?.notifications;
-			if (notificationsArr && length) {
-				reply.status(200).send(notificationsArr[length - 1]);
-			}
+			const length = deviceInfo.notifications.length;
+			const notificationsArr = deviceInfo.notifications;
+			reply.status(200).send(notificationsArr[length - 1]);
 		} catch (error) {
 			console.error(error);
 			reply.status(500).send({ success: false, message: 'An error occurred' });
