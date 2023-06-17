@@ -30,3 +30,7 @@ export type ClearNotificationQuery = {
   host: string;
   index: number;
 }
+
+export type StateResponse = {
+  state: NotificationState;
+}

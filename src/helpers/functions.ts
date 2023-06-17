@@ -102,3 +102,23 @@ export function replacer(key: any, value: any) {
 		return value;
 	}
 }
+
+/**
+ * Gets the current state of a given device (by host name) or 'NONE', if host was not found
+ * @param host which device to get state of
+ * @returns Current state of device or 'NONE', if device is in no state or not found
+ */
+export function getCurrentState(host: string): NotificationState {
+	// Get device from register
+	const deviceInfo = getAddressRegister().get(host);
+
+	// If in invalid state, return NONE
+	if (!deviceInfo || deviceInfo.notifications.length === 0) {
+		return NotificationState.NONE;
+	}
+
+	// Get most recent state and return it
+	const notifications = deviceInfo.notifications;
+	const state = notifications[notifications.length - 1];
+	return state;
+}

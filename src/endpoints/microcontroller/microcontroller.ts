@@ -1,8 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import { HTTP_TIMEOUT } from '../../config/config';
-import { RegisterDeviceBody, SendNotificationBody } from '../../types/requests';
+import { RegisterDeviceBody, SendNotificationBody, StateResponse } from '../../types/requests';
 import { getEspAddress, getAddressRegister } from '../../index';
-import { addRandomNotification, putAddressRegisterEntry } from '../../helpers/functions';
+import { addRandomNotification, getCurrentState, putAddressRegisterEntry } from '../../helpers/functions';
 import { NotificationState } from 'src/types/enums';
 
 export async function microcontrollerEndpoints(server: FastifyInstance) {
@@ -15,45 +15,41 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
    * Endpoint to receive notification from esp32 microcontroller (contains host address)
    * needs payload with scheme:
    * {host: "host address here"}
+	 * responds with new state of device
    */
-	server.post<{Body: SendNotificationBody}>('/sendNotification', async (request, reply) => {
-		try {
-			// Process the request and perform any necessary operations
-			const data = request.body; // Access the request body
+	server.post<{Body: SendNotificationBody, Reply: StateResponse}>('/sendNotification', async (request, reply) => {
 
-			const host = data['host'];
+		// Process the request and perform any necessary operations
+		const data = request.body; // Access the request body
 
-			// get register and check if host valid
-			const addressRegister = getAddressRegister();
-			const deviceInfo = addressRegister.get(host);
+		const host = data['host'];
 
-			// return early if host is invalid
-			if (!deviceInfo) {
-				console.log('msg="given host not found!"');
-				reply.status(404);
-				return;
-			}
+		// get register and check if host valid
+		const addressRegister = getAddressRegister();
+		const deviceInfo = addressRegister.get(host);
 
-			// generate new notification
-			const newNotificationState = addRandomNotification(host);
-
-			// If no new notification could be generated, return early
-			if (newNotificationState === NotificationState.NONE) {
-				reply.status(500);
-				return;
-			}
-
-			// Update notifications of device
-			deviceInfo.notifications.push(newNotificationState);
-
-			// Send the response, return the new state
-			const length = deviceInfo.notifications.length;
-			const notificationsArr = deviceInfo.notifications;
-			reply.status(200).send(notificationsArr[length - 1]);
-		} catch (error) {
-			console.error(error);
-			reply.status(500).send({ success: false, message: 'An error occurred' });
+		// return early if host is invalid
+		if (!deviceInfo) {
+			console.log('msg="given host not found!"');
+			reply.status(404);
+			return;
 		}
+
+		// generate new notification
+		const newNotificationState = addRandomNotification(host);
+
+		// If no new notification could be generated, return early
+		if (newNotificationState === NotificationState.NONE) {
+			reply.status(500);
+			return;
+		}
+
+		// Update notifications of device
+		deviceInfo.notifications.push(newNotificationState);
+
+		// Send the response, return the new state
+		const currentState = getCurrentState(host);
+		reply.status(200).send({ state: currentState });
 	});
 
 
@@ -85,18 +81,18 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
 
 	/**
    * Endpoint that esp32 calls on startup to register itself (if not already registered on server)
-   * Needs refactoring on esp32 microcontroller side, for now almost duplicate endpoint (see "/sendNotification")
+   * Sends back current state of device (esp32)
    */
-	server.post<{Body: RegisterDeviceBody}>('/registerDevice', async (request, reply) => {
-		try {
-			const { deviceName, host } = request.body; // Access the request body		const publicIP = request.ip;
+	server.post<{Body: RegisterDeviceBody, Reply: StateResponse}>('/registerDevice', async (request, reply) => {
+		// Access the request body
+		const { deviceName, host } = request.body;
 
-			putAddressRegisterEntry(host, { deviceName, notifications: [] });
-			// TODO: also send back current status
-			reply.status(200);
-		} catch (error) {
-			console.error(error);
-			reply.status(500).send({ success: false, message: 'An error occurred' });
-		}
+		// Update register
+		putAddressRegisterEntry(host, { deviceName, notifications: [] });
+
+		// Get current state of device
+		const deviceState = getCurrentState(host);
+		const response: StateResponse = { state: deviceState };
+		reply.status(200).send(response);
 	});
 }
