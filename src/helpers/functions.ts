@@ -1,5 +1,5 @@
 import { DeviceInfo } from 'src/types/types';
-import { getAddressRegister, getNotifications } from '../index';
+import { getAddressRegister } from '../index';
 import { NotificationState } from '../types/enums';
 
 /**
@@ -43,23 +43,21 @@ export function getNotificationStatusSize() {
  * @param {string} host what device to update notification for
  * @returns the generated notification
  */
-export function addRandomNotification(host: string) {
+export function addRandomNotification(host: string): NotificationState {
 	// Returns notification object, if device name is already stored
-	// e.g. {name: "Planty", notifications: [1]}
-	const notifications = getNotifications();
-	const notificationsOfDevice = notifications.find(o => o.name === host);
+	const addressRegister = getAddressRegister();
+	const deviceInfo = addressRegister.get(host);
+
+	// If no notification object for device is stored, return "none" state
+	if (!deviceInfo) {
+		return NotificationState.NONE;
+	}
 
 	// Generate new random notification to "send"
 	const randomNotification = generateRandomNotification();
 
-	// If no notification object for device is stored, generate new one and add notification
-	if (!notificationsOfDevice) {
-		notifications.push({ name: host, notifications: [randomNotification] });
-	}
-	else {
-		notificationsOfDevice.notifications.push(randomNotification);
-	}
-
+	// Add new notification to array and return generated one
+	deviceInfo.notifications.push(randomNotification);
 	return randomNotification;
 }
 
@@ -72,13 +70,21 @@ export function addRandomNotification(host: string) {
  */
 export function putAddressRegisterEntry(host: string, deviceInfo: DeviceInfo) {
 	const register = getAddressRegister();
-	const value = register.get(host);
+	const device = register.get(host);
 
-	if (value) {
-		value.deviceName = deviceInfo.deviceName;
-		register.set(host, value);
-	}
-	else {
+	if (device) {
+		// Update deviceName
+		device.deviceName = deviceInfo.deviceName;
+
+		// Check if notifications already exist and only update if not
+		const oldNotifications = device.notifications;
+		if (!oldNotifications) {
+			device.notifications = deviceInfo.notifications;
+		}
+
+		// Save result
+		register.set(host, device);
+	} else {
 		register.set(host, deviceInfo);
 	}
 }
@@ -92,8 +98,27 @@ export function replacer(key: any, value: any) {
 			dataType: 'Map',
 			value: Array.from(value.entries()), // or with spread: value: [...value]
 		};
-	}
-	else {
+	} else {
 		return value;
 	}
+}
+
+/**
+ * Gets the current state of a given device (by host name) or 'NONE', if host was not found
+ * @param host which device to get state of
+ * @returns Current state of device or 'NONE', if device is in no state or not found
+ */
+export function getCurrentState(host: string): NotificationState {
+	// Get device from register
+	const deviceInfo = getAddressRegister().get(host);
+
+	// If in invalid state, return NONE
+	if (!deviceInfo || deviceInfo.notifications.length === 0) {
+		return NotificationState.NONE;
+	}
+
+	// Get most recent state and return it
+	const notifications = deviceInfo.notifications;
+	const state = notifications[notifications.length - 1];
+	return state;
 }
