@@ -8,7 +8,7 @@ import { generalEndpoints } from './endpoints/server/server';
 import { microcontrollerEndpoints } from './endpoints/microcontroller/microcontroller';
 import { appEndpoints } from './endpoints/app/app';
 import { replacer } from './helpers/functions';
-import { DeviceInfo, MockAmount } from './types/types';
+import { DeviceInfo, AddMockDeviceRequest } from './types/types';
 
 const ips: TempIP[] = [];
 // stores all devices and their notifications
@@ -223,9 +223,10 @@ server.listen({ port: 80, host:'0.0.0.0' }, function(err, address) {
 });
 
 // simply add Planty to the address register, mock
-server.get<{Querystring: MockAmount}>('/addPlanty', async (request, reply) => {
+server.get<{Querystring: AddMockDeviceRequest}>('/addPlanty', async (request, reply) => {
 	console.log('adding Planty to addressregister');
-	let amount = request.query['amount'];
+	let amount = request.query['deviceAmount'];
+	const { notificationAmount, randomizeAmount } = request.query;
 	if (!amount) amount = 1;
 
 	for (let i = 0; i < amount; i++) {

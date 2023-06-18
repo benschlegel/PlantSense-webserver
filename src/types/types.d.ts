@@ -11,8 +11,10 @@ export type DeviceInfo = {
   notifications: NotificationState[];
 }
 
-export type MockAmount = {
-  amount: number;
+export type AddMockDeviceRequest = {
+  deviceAmount: number;
+  notificationAmount?: number;
+  randomizeAmount?: boolean;
 }
 
 export type TempIP = {
