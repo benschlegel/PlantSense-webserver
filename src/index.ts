@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import * as Fastify from 'fastify';
 import { RgbPayload, AddressRegisterMap, TempIP } from './types/types';
-import { ClearNotificationQuery, NotificationBody, SetStateBody } from './types/requests';
+import { ClearBody, ClearNotificationQuery, NotificationBody, SetStateBody } from './types/requests';
 import { setState, setLed } from './helpers/networkFunctions';
 import { VERSION_PREFIX } from './config/config';
 import { generalEndpoints } from './endpoints/server/server';
@@ -95,6 +95,19 @@ server.get('/allNotifications', async (req, reply) => {
 	});
 
 	reply.status(200).send(notifications);
+});
+
+/**
+ * Temp endpoint to clear all devices
+ */
+server.delete<{Body: ClearBody}>('/clear', async (req, reply) => {
+	const pw = req.body['pw'];
+	if (pw === '?fFB@cJoB9') {
+		addressRegister.clear();
+		reply.status(200);
+	} else {
+		reply.status(500);
+	}
 });
 
 /**
@@ -223,10 +236,10 @@ server.listen({ port: 80, host:'0.0.0.0' }, function(err, address) {
 });
 
 // simply add Planty to the address register, mock
-server.get<{Querystring: AddMockDeviceRequest}>('/addPlanty', async (request, reply) => {
+server.post<{Body: AddMockDeviceRequest}>('/addPlanty', async (request, reply) => {
 	console.log('adding Planty to addressregister');
-	let amount = request.query['deviceAmount'];
-	const { notificationAmount, randomizeAmount } = request.query;
+	let amount = request.body['deviceAmount'];
+	const { notificationAmount, randomizeAmount } = request.body;
 	if (!amount) amount = 1;
 
 	for (let i = 0; i < amount; i++) {

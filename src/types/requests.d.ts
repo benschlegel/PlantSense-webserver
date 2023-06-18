@@ -22,6 +22,9 @@ export type NotificationBody = {
   hosts: string[];
 }
 
+export type ClearBody = {
+  pw: string;
+}
 export type SetStateBody = {
   state: NotificationState
 }
