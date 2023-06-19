@@ -9,6 +9,7 @@ import { microcontrollerEndpoints } from './endpoints/microcontroller/microcontr
 import { appEndpoints } from './endpoints/app/app';
 import { replacer } from './helpers/functions';
 import { DeviceInfo, AddMockDeviceRequest } from './types/types';
+import metadata from './metadata.json';
 
 const ips: TempIP[] = [];
 // stores all devices and their notifications
@@ -101,18 +102,31 @@ server.get('/allNotifications', async (req, reply) => {
  * Temp endpoint to clear all devices
  */
 server.delete<{Body: ClearBody}>('/clear', async (req, reply) => {
-	const pw = req.body['pw'];
 	const envPW = process.env['PASSWORD'];
-	if (!envPW) {
-		reply.status(500);
+	if (!envPW || envPW === '') {
+		// If env pw is not set (should only be the case on local setup), clear register
+		// addressRegister.clear();
+		reply.status(200);
 		return;
 	}
+
+	const pw = req.body['pw'];
+	// For deployed version of server, check if password matches
 	if (pw === envPW) {
 		addressRegister.clear();
 		reply.status(200);
 	} else {
 		reply.status(500);
 	}
+});
+
+/**
+ * Returns the current server version
+ */
+server.get('/version', async (req, reply) => {
+	const versionDenominators = [metadata.buildMajor, metadata.buildMinor, metadata.buildRevision];
+	const version = versionDenominators.join('.') ;
+	reply.status(200).send(version);
 });
 
 /**

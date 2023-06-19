@@ -6,6 +6,6 @@ fs.readFile('src/metadata.json', function(err, content) {
 	metadata.buildRevision = metadata.buildRevision + 1;
 	fs.writeFile('src/metadata.json', JSON.stringify(metadata, null, 2), function(err) {
 		if (err) throw err;
-		console.log(`Current build number: ${metadata.buildMajor}.${metadata.buildMinor}.${metadata.buildRevision} ${metadata.buildTag}`);
+		console.log(`Current build number: ${metadata.buildMajor}.${metadata.buildMinor}.${metadata.buildRevision}`);
 	});
 });
