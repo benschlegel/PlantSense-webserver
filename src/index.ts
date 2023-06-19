@@ -102,7 +102,12 @@ server.get('/allNotifications', async (req, reply) => {
  */
 server.delete<{Body: ClearBody}>('/clear', async (req, reply) => {
 	const pw = req.body['pw'];
-	if (pw === '?fFB@cJoB9') {
+	const envPW = process.env['PASSWORD'];
+	if (!envPW) {
+		reply.status(500);
+		return;
+	}
+	if (pw === envPW) {
 		addressRegister.clear();
 		reply.status(200);
 	} else {
