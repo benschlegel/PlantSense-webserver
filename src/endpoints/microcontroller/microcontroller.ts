@@ -35,7 +35,7 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
 			return;
 		}
 
-		// generate new notification
+		// generate new notification and store it to register
 		const newNotificationState = addRandomNotification(host);
 
 		// If no new notification could be generated, return early
@@ -43,9 +43,6 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
 			reply.status(500);
 			return;
 		}
-
-		// Update notifications of device
-		deviceInfo.notifications.push(newNotificationState);
 
 		// Send the response, return the new state
 		const currentState = getCurrentState(host);
