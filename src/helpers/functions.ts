@@ -127,12 +127,18 @@ export function getCurrentState(host: string): NotificationState {
 
 export function stateToRgb(state: NotificationState): RgbBody {
 	console.log('Called with state:_ ', state);
-	if (state === 0 || state === 1) {
-		return { rgb: water, isBreathing: state % 2 === 0 };
-	} else if (state === 2 || state === 3) {
-		return { rgb: sun, isBreathing: state % 2 === 0 };
-	} else if (state === 4 || state === 5) {
-		return { rgb: fertilizer, isBreathing: state % 2 === 0 };
+	if (state === 0) {
+		return { rgb: water, isBreathing: true };
+	} else if (state === 1) {
+		return { rgb: water, isBreathing: false };
+	} else if (state === 2) {
+		return { rgb: sun, isBreathing: true };
+	} else if (state === 3) {
+		return { rgb: sun, isBreathing: false };
+	} else if (state === 4) {
+		return { rgb: fertilizer, isBreathing: true };
+	} else if (state === 5) {
+		return { rgb: fertilizer, isBreathing: false };
 	} else {
 		return { rgb: defaultState, isBreathing: false };
 	}
