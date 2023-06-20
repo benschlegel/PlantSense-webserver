@@ -220,8 +220,12 @@ server.delete<{Querystring: ClearNotificationQuery}>('/clearNotification', async
 	// paranoid
 	addressRegister.set(requestHost, currentDevice);
 
+	const stateNumber = parseInt(getCurrentState(requestHost) + '');
+	console.log('State number: ', stateNumber);
+	const currentRgb = stateToRgb(stateNumber);
+
 	// If there are remaining notifications, pick most recent one after deleting
-	reply.status(200);
+	reply.status(200).send(currentRgb.rgb);
 });
 
 /**
