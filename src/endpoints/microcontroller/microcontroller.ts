@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { HTTP_TIMEOUT } from '../../config/config';
-import { RegisterDeviceBody, SendNotificationBody, StateResponse } from '../../types/requests';
+import { RegisterDeviceBody, RgbBody, SendNotificationBody, StateResponse } from '../../types/requests';
 import { getEspAddress, getAddressRegister } from '../../index';
 import { addRandomNotification, getCurrentState, putAddressRegisterEntry, stateToRgb } from '../../helpers/functions';
 import { NotificationState } from '../../types/enums';
@@ -18,7 +18,7 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
    * {host: "host address here"}
 	 * responds with new state of device
    */
-	server.post<{Body: SendNotificationBody, Reply: RgbPayload}>('/sendNotification', async (request, reply) => {
+	server.post<{Body: SendNotificationBody, Reply: RgbBody}>('/sendNotification', async (request, reply) => {
 
 		// Process the request and perform any necessary operations
 		const data = request.body; // Access the request body
@@ -48,7 +48,7 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
 		// Send the response, return the new state
 		const deviceState = parseInt(getCurrentState(host) + '');
 		const rgb = stateToRgb(deviceState);
-		reply.status(200).send(rgb.rgb);
+		reply.status(200).send(rgb);
 	});
 
 
@@ -82,7 +82,7 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
    * Endpoint that esp32 calls on startup to register itself (if not already registered on server)
    * Sends back current state of device (esp32)
    */
-	server.post<{Body: RegisterDeviceBody, Reply: RgbPayload}>('/registerDevice', async (request, reply) => {
+	server.post<{Body: RegisterDeviceBody, Reply: RgbBody}>('/registerDevice', async (request, reply) => {
 		// Access the request body
 		const { deviceName, host } = request.body;
 
@@ -92,6 +92,6 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
 		// Get current state of device
 		const deviceState = parseInt(getCurrentState(host) + '');
 		const rgb = stateToRgb(deviceState);
-		reply.status(200).send(rgb.rgb);
+		reply.status(200).send(rgb);
 	});
 }
