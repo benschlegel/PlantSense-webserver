@@ -60,12 +60,24 @@ server.get('/devices', async (request, reply) => {
  */
 server.get<{Querystring: NotificationBody, Reply: NotificationResponse[]}>('/notifications', async (request, reply) => {
 	const hosts = request.query['hosts'];
-	console.log(hosts);
+	console.log('All incoming hosts: ', hosts);
+	console.log('Is array: ', Array.isArray(hosts));
+	console.log('Is string: ', typeof hosts === 'string' || hosts instanceof String);
 	const resultArray: NotificationResponse[] = [];
 
 	// Return early if request is bad
 	if (!hosts || hosts.length === 0) {
 		reply.status(500);
+	}
+
+	// Check for only one argument
+	if (typeof hosts === 'string' || hosts instanceof String) {
+		// TODO: code duplication, refactor to function
+		const device = addressRegister.get(hosts + '');
+		if (device) {
+			const entry: NotificationResponse = { deviceName: device.deviceName, notifications: device.notifications, host: hosts + '' };
+			resultArray.push(entry);
+		}
 	}
 
 	for (const host of hosts) {
@@ -76,13 +88,13 @@ server.get<{Querystring: NotificationBody, Reply: NotificationResponse[]}>('/not
 		}
 	}
 
-	if (resultArray.length === 0) {
-		console.warn('invalid hosts specified!');
-		reply.status(404);
-	} else {
-		console.log('found notifications for ' + resultArray.length + ' device(s) of ' + hosts.length + ' device(s) given');
-		reply.status(200).send(resultArray);
-	}
+	// if (resultArray.length === 0) {
+	// 	console.warn('invalid hosts specified!');
+	// 	reply.status(404);
+	// } else {
+	// }
+	console.log('found notifications for ' + resultArray.length + ' device(s) of ' + hosts.length + ' device(s) given');
+	reply.status(200).send(resultArray);
 });
 
 /**
