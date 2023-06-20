@@ -1,6 +1,8 @@
-import { DeviceInfo } from 'src/types/types';
+import { DeviceInfo } from '../types/types';
 import { getAddressRegister } from '../index';
 import { NotificationState } from '../types/enums';
+import { RgbBody } from '../types/requests';
+import { defaultState, fertilizer, sun, water } from '../config/config';
 
 /**
  * Returns a random integer between min (inclusive) and max (inclusive).
@@ -121,4 +123,40 @@ export function getCurrentState(host: string): NotificationState {
 	const notifications = deviceInfo.notifications;
 	const state = notifications[notifications.length - 1];
 	return state;
+}
+
+export function stateToRgb(state: NotificationState): RgbBody {
+	console.log('Called with state:_ ', state);
+	if (state === 0 || state === 1) {
+		return { rgb: water, isBreathing: state % 2 === 0 };
+	} else if (state === 2 || state === 3) {
+		return { rgb: sun, isBreathing: state % 2 === 0 };
+	} else if (state === 4 || state === 5) {
+		return { rgb: fertilizer, isBreathing: state % 2 === 0 };
+	} else {
+		return { rgb: defaultState, isBreathing: false };
+	}
+	// switch (state) {
+	// case NotificationState.LOW_WATER: {
+	// 	return { rgb: water, isBreathing: true };
+	// }
+	// case NotificationState.HIGH_WATER: {
+	// 	return { rgb: water, isBreathing: false };
+	// }
+	// case NotificationState.LOW_SOIL: {
+	// 	return { rgb: fertilizer, isBreathing: true };
+	// }
+	// case NotificationState.HIGH_SOIL: {
+	// 	return { rgb: fertilizer, isBreathing: false };
+	// }
+	// case NotificationState.LOW_SUN: {
+	// 	return { rgb: sun, isBreathing: true };
+	// }
+	// case NotificationState.HIGH_SUN: {
+	// 	return { rgb: sun, isBreathing: false };
+	// }
+	// default: {
+	// 	return { rgb: defaultState, isBreathing: false };
+	// }
+	// }
 }

@@ -3,7 +3,7 @@ import { HTTP_TIMEOUT } from '../../config/config';
 import { RegisterDeviceBody, SendNotificationBody, StateResponse } from '../../types/requests';
 import { getEspAddress, getAddressRegister } from '../../index';
 import { addRandomNotification, getCurrentState, putAddressRegisterEntry } from '../../helpers/functions';
-import { NotificationState } from 'src/types/enums';
+import { NotificationState } from '../../types/enums';
 
 export async function microcontrollerEndpoints(server: FastifyInstance) {
 	// Enable this if prefix exists

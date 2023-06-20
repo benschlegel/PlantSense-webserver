@@ -1,4 +1,5 @@
 import { NotificationState } from './enums';
+import { RgbPayload } from './types';
 
 export type SendNotificationBody = {
   host: string;
@@ -19,6 +20,22 @@ export type NotificationParams = {
 
 export type NotificationBody = {
   hosts: string[];
+}
+
+export type CurrentInfoResponse = RgbBody & {totalNotificationAmount: number}
+
+
+export type CurrentInfoBody = {
+  host: string;
+}
+
+export type RgbBody = {
+  rgb: RgbPayload;
+  isBreathing: boolean;
+}
+
+export type StateToRgbBody = {
+  state: NotificationState;
 }
 
 export type ClearBody = {

@@ -1,15 +1,16 @@
 import fetch from 'node-fetch';
 import * as Fastify from 'fastify';
 import { RgbPayload, AddressRegisterMap, TempIP, NotificationResponse } from './types/types';
-import { ClearBody, ClearNotificationQuery, NotificationBody, SetStateBody } from './types/requests';
+import { ClearBody, ClearNotificationQuery, CurrentInfoBody, CurrentInfoResponse, NotificationBody, RgbBody, SetStateBody, StateToRgbBody } from './types/requests';
 import { setState, setLed } from './helpers/networkFunctions';
 import { VERSION_PREFIX } from './config/config';
 import { generalEndpoints } from './endpoints/server/server';
 import { microcontrollerEndpoints } from './endpoints/microcontroller/microcontroller';
 import { appEndpoints } from './endpoints/app/app';
-import { replacer } from './helpers/functions';
+import { getCurrentState, replacer, stateToRgb } from './helpers/functions';
 import { DeviceInfo, AddMockDeviceRequest } from './types/types';
 import metadata from './metadata.json';
+import { NotificationState } from './types/enums';
 
 const ips: TempIP[] = [];
 // stores all devices and their notifications
@@ -228,6 +229,33 @@ server.delete<{Querystring: ClearNotificationQuery}>('/clearNotification', async
  */
 server.get('/deviceAddress', async (request, reply) => {
 	reply.status(200).send({ address: espAddress });
+});
+
+/**
+ * Gets current info of a selected host/device (via body)
+ */
+server.get<{Querystring: CurrentInfoBody, Reply: CurrentInfoResponse}>('/currentInfo', async (request, reply) => {
+	// TODO: check if host param exists
+	const host = request.query.host;
+	const stateNumber = parseInt(getCurrentState(host) + '');
+	console.log('State number: ', stateNumber);
+	const currentRgb = stateToRgb(stateNumber);
+	let notifications = 0;
+	addressRegister.forEach((element, key) => {
+		console.log('Lenght for: ' + key + ' = ' + element.notifications.length);
+		notifications += element.notifications.length;
+	});
+	reply.status(200).send({ totalNotificationAmount: notifications, isBreathing: currentRgb.isBreathing, rgb: currentRgb.rgb });
+});
+
+/**
+ * Returns the rgb values for a given state
+ * TODO: fix query string type, doesnt work with number or notificationstate
+ */
+server.get<{Querystring: {state: string}, Reply: RgbBody}>('/stateToRgb', async (request, reply) => {
+	const state = parseInt(request.query.state);
+	const rgb = stateToRgb(state);
+	reply.status(200).send(rgb);
 });
 
 /**
