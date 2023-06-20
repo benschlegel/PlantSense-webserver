@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 import * as Fastify from 'fastify';
-import { RgbPayload, AddressRegisterMap, TempIP } from './types/types';
+import { RgbPayload, AddressRegisterMap, TempIP, NotificationResponse } from './types/types';
 import { ClearBody, ClearNotificationQuery, NotificationBody, SetStateBody } from './types/requests';
 import { setState, setLed } from './helpers/networkFunctions';
 import { VERSION_PREFIX } from './config/config';
@@ -58,10 +58,10 @@ server.get('/devices', async (request, reply) => {
  * Query specifies all hosts to search for (multiple '?hosts=' chained)
  * @returns all notifications for given devices or 404 if none of the hosts were valid.
  */
-server.get<{Querystring: NotificationBody}>('/notifications', async (request, reply) => {
+server.get<{Querystring: NotificationBody, Reply: NotificationResponse[]}>('/notifications', async (request, reply) => {
 	const hosts = request.query['hosts'];
 	console.log(hosts);
-	const resultArray: Array<DeviceInfo> = [];
+	const resultArray: NotificationResponse[] = [];
 
 	// Return early if request is bad
 	if (!hosts || hosts.length === 0) {
@@ -70,7 +70,10 @@ server.get<{Querystring: NotificationBody}>('/notifications', async (request, re
 
 	for (const host of hosts) {
 		const device = addressRegister.get(host);
-		if (device) resultArray.push(device);
+		if (device) {
+			const entry: NotificationResponse = { deviceName: device.deviceName, notifications: device.notifications, host: host };
+			resultArray.push(entry);
+		}
 	}
 
 	if (resultArray.length === 0) {
@@ -86,13 +89,14 @@ server.get<{Querystring: NotificationBody}>('/notifications', async (request, re
  * Returns all notifications for all devices stored on the server.
  * Scheme: [{name: string, notifications: number}]
  */
-server.get('/allNotifications', async (req, reply) => {
+server.get<{Reply: NotificationResponse[]}>('/allNotifications', async (req, reply) => {
 	if (addressRegister.size == 0) reply.status(500);
 
-	const notifications:DeviceInfo[] = [];
+	const notifications:NotificationResponse[] = [];
 
-	addressRegister.forEach(element => {
-		notifications.push(element);
+	addressRegister.forEach((element, key) => {
+		const entry: NotificationResponse = { deviceName: element.deviceName, notifications: element.notifications, host: key };
+		notifications.push(entry);
 	});
 
 	reply.status(200).send(notifications);

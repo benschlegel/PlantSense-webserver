@@ -11,6 +11,8 @@ export type DeviceInfo = {
   notifications: NotificationState[];
 }
 
+export type NotificationResponse = DeviceInfo & {host: string};
+
 export type AddMockDeviceRequest = {
   deviceAmount: number;
   notificationAmount?: number;
