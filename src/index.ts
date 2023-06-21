@@ -225,7 +225,7 @@ server.delete<{Querystring: ClearNotificationQuery}>('/clearNotification', async
 	const currentRgb = stateToRgb(stateNumber);
 
 	// If there are remaining notifications, pick most recent one after deleting
-	reply.status(200).send(currentRgb.rgb);
+	reply.status(200).send(currentRgb);
 });
 
 /**
