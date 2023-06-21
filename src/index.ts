@@ -156,10 +156,10 @@ server.post<{Body: SetStateBody}>('/setState', async (request, reply) => {
 		// gets the '?state=' parameter
 		const stateBody = request.body['state'];
 
-		// TODO: validation
-
-		setState(stateBody, espAddress);
-		reply.status(200);
+		// Send the response, return the new state
+		const deviceState = parseInt(stateBody + '');
+		const rgb = stateToRgb(deviceState);
+		reply.status(200).send(rgb);
 	} catch (error) {
 		console.error(error);
 		reply.status(500).send({ success: false, message: 'An error occurred' });
