@@ -43,6 +43,7 @@ export type ClearBody = {
 }
 export type SetStateBody = {
   state: NotificationState
+  host: string;
 }
 
 export type ClearNotificationQuery = {

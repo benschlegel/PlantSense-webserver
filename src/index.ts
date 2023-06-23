@@ -1,16 +1,15 @@
 import fetch from 'node-fetch';
 import * as Fastify from 'fastify';
 import { RgbPayload, AddressRegisterMap, TempIP, NotificationResponse } from './types/types';
-import { ClearBody, ClearNotificationQuery, CurrentInfoBody, CurrentInfoResponse, NotificationBody, RgbBody, SetStateBody, StateToRgbBody } from './types/requests';
-import { setState, setLed } from './helpers/networkFunctions';
+import { ClearBody, ClearNotificationQuery, CurrentInfoBody, CurrentInfoResponse, NotificationBody, RgbBody, SetStateBody } from './types/requests';
+import { setLed } from './helpers/networkFunctions';
 import { VERSION_PREFIX } from './config/config';
 import { generalEndpoints } from './endpoints/server/server';
 import { microcontrollerEndpoints } from './endpoints/microcontroller/microcontroller';
 import { appEndpoints } from './endpoints/app/app';
 import { getCurrentState, replacer, stateToRgb } from './helpers/functions';
-import { DeviceInfo, AddMockDeviceRequest } from './types/types';
+import { AddMockDeviceRequest } from './types/types';
 import metadata from './metadata.json';
-import { NotificationState } from './types/enums';
 
 const ips: TempIP[] = [];
 // stores all devices and their notifications
@@ -151,19 +150,22 @@ server.get('/version', async (req, reply) => {
  * Takes 'state' (?state=) as a query parameter to set new state
  * @returns 200, if successful or 500 if not.
  */
-server.post<{Body: SetStateBody}>('/setState', async (request, reply) => {
-	try {
-		// gets the '?state=' parameter
-		const stateBody = request.body['state'];
+server.post<{Body: SetStateBody, Reply: RgbBody}>('/setState', async (request, reply) => {
+	// gets the '?state=' parameter
+	const stateBody = request.body['state'];
+	const host = request.body['host'];
+	const deviceInfo = addressRegister.get(host);
 
-		// Send the response, return the new state
-		const deviceState = parseInt(stateBody + '');
-		const rgb = stateToRgb(deviceState);
-		reply.status(200).send(rgb);
-	} catch (error) {
-		console.error(error);
-		reply.status(500).send({ success: false, message: 'An error occurred' });
+	if (!deviceInfo) {
+		return reply.status(404);
 	}
+
+	// Send the response, return the new state
+	const deviceState = parseInt(stateBody + '');
+	deviceInfo.notifications.push(deviceState);
+	// addressRegister
+	const rgb = stateToRgb(deviceState);
+	reply.status(200).send(rgb);
 });
 
 /**
