@@ -5,6 +5,7 @@ import { getEspAddress, getAddressRegister } from '../../index';
 import { addRandomNotification, getCurrentState, putAddressRegisterEntry, stateToRgb } from '../../helpers/functions';
 import { NotificationState } from '../../types/enums';
 import { RgbPayload } from '../../types/types';
+import { devicesGauge } from '../../monitoring/prometheus';
 
 export async function microcontrollerEndpoints(server: FastifyInstance) {
 	// Enable this if prefix exists
@@ -88,6 +89,8 @@ export async function microcontrollerEndpoints(server: FastifyInstance) {
 
 		// Update register
 		putAddressRegisterEntry(host, { deviceName, notifications: [] });
+		const register = getAddressRegister();
+		devicesGauge.set(register.size);
 
 		// Get current state of device
 		const deviceState = parseInt(getCurrentState(host) + '');

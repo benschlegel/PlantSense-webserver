@@ -10,6 +10,7 @@ import { appEndpoints } from './endpoints/app/app';
 import { getCurrentState, replacer, stateToRgb } from './helpers/functions';
 import { AddMockDeviceRequest } from './types/types';
 import metadata from './metadata.json';
+import { devicesGauge, monitoringEndpoints } from './monitoring/prometheus';
 
 const ips: TempIP[] = [];
 // stores all devices and their notifications
@@ -27,6 +28,7 @@ export const server: Fastify.FastifyInstance = Fastify.fastify({ logger: true, t
 // containing all endpoints
 // all routes from register will be prefixed with prefix
 server.register(generalEndpoints);
+server.register(monitoringEndpoints);
 server.register(microcontrollerEndpoints, { prefix: VERSION_PREFIX + '/mc' });
 server.register(appEndpoints, { prefix: VERSION_PREFIX + '/app' });
 
@@ -130,6 +132,7 @@ server.delete<{Body: ClearBody}>('/clear', async (req, reply) => {
 	// For deployed version of server, check if password matches
 	if (pw === envPW) {
 		addressRegister.clear();
+		devicesGauge.set(0);
 		reply.status(200);
 	} else {
 		reply.status(500);

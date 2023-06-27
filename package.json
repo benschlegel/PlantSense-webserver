@@ -15,7 +15,8 @@
   "license": "ISC",
   "dependencies": {
     "fastify": "^4.17.0",
-    "node-fetch": "2"
+    "node-fetch": "2",
+    "prom-client": "^14.2.0"
   },
   "devDependencies": {
     "@types/node": "^20.2.6",
