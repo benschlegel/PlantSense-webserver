@@ -16,7 +16,7 @@ export const sun: RgbPayload = {
 export const fertilizer: RgbPayload = {
 	red: 255,
 	green: 0,
-	blue: 0,
+	blue: 255,
 };
 
 export const defaultState: RgbPayload = {
